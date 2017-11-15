@@ -1,0 +1,17 @@
+{
+  "name": "etl",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.149.0",
+    "commander": "^2.11.0",
+    "moment-timezone": "^0.5.14",
+    "numeral": "^2.0.6"
+  }
+}
