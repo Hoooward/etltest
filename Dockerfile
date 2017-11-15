@@ -9,5 +9,5 @@ ADD . /home/etl
 RUN npm install
 RUN node -v
 #CMD ["node" 'main.js','-l','request']
-CMD node /home/tracketl/main.js -l $LOGTYPE
+CMD node /home/etl/main.js -l $LOGTYPE
 # CMD node /home/tracketl/index.js
