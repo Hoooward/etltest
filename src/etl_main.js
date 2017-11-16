@@ -90,7 +90,7 @@ const etlBatchExecute = (parseline, prefix) => async batchTime => {
     var path = buildPath(batchTime);
     var trackPath = `${prefix}/${path}/`;
     var etlPath = `etl_test${prefix}/dt=${path}`;
-  var etl = etlFn(parseline);
+    var etl = etlFn(parseline);
 
     var params_listObject = {
         Bucket: bucket,
@@ -170,7 +170,7 @@ async function buildEtlBody(prefix, batchTime, newItems) {
 
   let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
 
-  console.log('ETL existing objects ', etlExitingObjects);
+console.log('ETL existing objects ', etlExitingObjects);
 
   var writeingToOldFile = false;
 
@@ -192,16 +192,17 @@ async function buildEtlBody(prefix, batchTime, newItems) {
         Key:lastContentKey,
       };
 
-      let lastFile = await s3.getObject(params_getLastObject).promise();
 
-      let lastFileBody = lastFile.Body.toString();
+      // let lastFile = await s3.getObject(params_getLastObject).promise();
+
+      // let lastFileBody = lastFile.Body.toString();
       var newBodyLength = Buffer.from(newBodyString).length;
       console.log("ETL new body length", newBodyLength);
 
       // 清空 body
       body = "";
       // 如果新内容+旧内容的大小不超过 100 MB
-      if (newBodyLength+ lastContentSize <= maxFileSize) {
+      if (newBodyLength + lastContentSize <= maxFileSize) {
         writeingToOldFile = true;
         etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
         body += JSON.stringify(lastFileBody);
