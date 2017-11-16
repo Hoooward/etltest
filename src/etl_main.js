@@ -85,91 +85,99 @@ var buildBody = function (items) {
 
 }
 
-const etlBatchExecute = (parseline, prefix) => async batchTime => {
-    console.log('etlBatchExecute start, batchTime : ', batchTime);
+async function etlExecute(parseline, prefix, times) {
 
-    var path = buildPath(batchTime);
-    var trackPath = `${prefix}/${path}/`;
-    var etlPath = `etl_test${prefix}/dt=${path}`;
-    var etl = etlFn(parseline);
-
-    var params_listObject = {
-        Bucket: bucket,
-        /* required */
-        Prefix: trackPath
-    };
-
-    try {
-        // 获取原始数据
-        var objectList = await s3.listObjects(params_listObject).promise();
-
-    } catch (err) {
-        console.error("fetch s3 file error : ", err);
-        throw err;
-    }
-
-    console.log("Object File Count from s3 : ", objectList.Contents.length);
+    let batchTime = times[0];
 
     let lastBodyInfo = await generateLastFileInfo(prefix, batchTime);
     var bodyKey = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
-    // 成功之后遍历结果
-    for (let object of objectList.Contents) {
+    for (var time of times) {
 
-        let key = object.Key;
-        let params_getObject = {
+        console.log('etlBatchExecute start, batchTime : ', batchTime);
+
+        var path = buildPath(time);
+        var trackPath = `${prefix}/${path}/`;
+        var etlPath = `etl_test${prefix}/dt=${path}`;
+        var etl = etlFn(parseline);
+
+        var params_listObject = {
             Bucket: bucket,
-            Key: key,
+            Prefix: trackPath
         };
 
-        console.log('Get Object And ETL : ', params_getObject);
-        let traceData = await s3.getObject(params_getObject).promise();
-        let items = etl(traceData, batchTime, parseline);
-        console.log('ETL Item Count', items.length);
+        try {
+            // 获取当前时间片原始数据
+            var objectList = await s3.listObjects(params_listObject).promise();
 
-        if (items && items.length > 0) {
+        } catch (err) {
+            console.error("fetch s3 file error : ", err);
+            throw err;
+        }
 
-            let newBody = buildBody(items);
-            generateBody += newBody;
-            lastContentSize += Buffer.from(newBody).length;
+        console.log("Object File Count from s3 : ", objectList.Contents.length);
 
-            if (lastContentSize >= maxFileSize ) {
+        // 成功之后遍历结果
+        for (let object of objectList.Contents) {
 
-                console.log('current body size >= target, is beginning upload... ', Buffer.from(newBody).length + lastContentSize)
+            let key = object.Key;
+            let params_getObject = {
+                Bucket: bucket,
+                Key: key,
+            };
 
-                let params_putObject = {
-                    Bucket: bucket,
-                    Key: bodyKey,
-                    Body: generateBody,
-                };
+            console.log('Get Object And ETL : ', params_getObject);
+            let traceData = await s3.getObject(params_getObject).promise();
+            let items = etl(traceData, batchTime, parseline);
+            console.log('ETL Item Count', items.length);
 
-                let rs = await s3.putObject(params_putObject).promise();
+            if (items && items.length > 0) {
 
-                console.log(`ETL Saved To S3 filename ${body.bodyPath}, rs: `, rs);
+                let newBody = buildBody(items);
+                generateBody += newBody;
+                lastContentSize += Buffer.from(newBody).length;
 
-                generateBody = null;
-                generateBody = "";
-                lastContentSize = 0;
+                if (lastContentSize >= maxFileSize ) {
 
-                let dirPath = buildEtlPath(batchTime)
-                var etlTargetFilePath = `etl_test${prefix}/${dirPath}/`;
-                etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
-                bodyKey = etlTargetFilePath;
+                    console.log('current body size >= target, is beginning upload... ', Buffer.from(newBody).length + lastContentSize)
 
-            } else {
+                    let params_putObject = {
+                        Bucket: bucket,
+                        Key: bodyKey,
+                        Body: generateBody,
+                    };
 
-                console.log('current body size < target ',  Buffer.from(newBody).length + lastContentSize);
+                    let rs = await s3.putObject(params_putObject).promise();
+
+                    console.log(`ETL Saved To S3 filename ${body.bodyPath}, rs: `, rs);
+
+                    generateBody = null;
+                    generateBody = "";
+                    lastContentSize = 0;
+
+                    let dirPath = buildEtlPath(batchTime)
+                    var etlTargetFilePath = `etl_test${prefix}/${dirPath}/`;
+                    etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
+                    bodyKey = etlTargetFilePath;
+
+                } else {
+
+                    console.log('current body size < target ',  Buffer.from(newBody).length + lastContentSize);
+                }
             }
         }
     }
 }
 
+const etlBatchExecute = (parseline, prefix) => async batchTime => {
+
+
+}
+
 var generateBody = "";
 async function generateLastFileInfo(prefix, batchTime) {
-    if (generateBody.length > 0) {
 
-    }
     //1. 读取旧文件信息
     let dirPath = buildEtlPath(batchTime)
     var etlDirPath = `etl_test${prefix}/${dirPath}/`;
@@ -386,8 +394,9 @@ class EtlExecutor {
                 throw new Error(`something wrong with param, pls check!\ntime:${this.time}\n$logtype:${this.logtype}\n$etlInstance:${etls[this.logtype]}`);
             }
 
+            await  etlExecute(parseline, prefix, times)
             for (var time of times) {
-                await etlBatchExecute(parseline, prefix)(time);
+                // await etlBatchExecute(parseline, prefix)(time);
             }
         }
     }
