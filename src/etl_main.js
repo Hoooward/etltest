@@ -87,6 +87,7 @@ async function etlExecute(parseline, prefix, times) {
     var bodyPath = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
+    var lastTime = times[times.length - 1];
     for (var time of times) {
 
         console.log('\n\n\n');
@@ -142,7 +143,6 @@ async function etlExecute(parseline, prefix, times) {
 
                     // 将 bodyCache 写入 s3 .
                     await putBodyCacheToS3(bodyPath)
-                    console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
 
                     // 重置 bodyCache .
                     let newFileInfo = generateNewLastFileInfo(prefix)
@@ -152,9 +152,8 @@ async function etlExecute(parseline, prefix, times) {
                 } else {
                     console.log('bodyCache size < Max ', lastContentSize);
 
-                    let currentTime = times[times.length -1]
                     // 如果是最后一个 time
-                    if (currentTime == time) {
+                    if (lastTime == time) {
                         // 将 bodyCache 写入 s3 .
                         await putBodyCacheToS3(bodyPath);
                     }
