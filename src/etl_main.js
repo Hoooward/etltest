@@ -13,6 +13,7 @@ const etls = {
 const bucket = 'com.yodamob.adserver.track';
 
 var body = "";
+
 const maxFileSize = 80 * 1024 * 1024;
 
 var etlFn = parseline => (data, batchTime) => {
@@ -51,9 +52,9 @@ var etlFn = parseline => (data, batchTime) => {
 }
 
 var buildEtlPath = function (time) {
-  var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
-  var path = beijingTime.format('YYYYMMDD');
-  return path;
+    var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
+    var path = beijingTime.format('YYYYMMDD');
+    return path;
 }
 
 var buildPath = function (time) {
@@ -99,123 +100,178 @@ const etlBatchExecute = (parseline, prefix) => async batchTime => {
     };
 
     try {
-        // 获取零散数据
+        // 获取原始数据
         var objectList = await s3.listObjects(params_listObject).promise();
 
     } catch (err) {
-
         console.error("fetch s3 file error : ", err);
         throw err;
+    }
+
+    console.log("Object File Count from s3 : ", objectList.Contents.length);
+
+    let lastBodyInfo = await generateLastFileInfo(prefix, batchTime, items);
+    // let body = lastBodyInfo.body;
+    var bodyKey = lastBodyInfo.bodyPath;
+    var lastContentSize = lastBodyInfo.lastContentSize;
+
+    // 成功之后遍历结果
+    for (let object of objectList.Contents) {
+
+        let key = object.Key;
+        let params_getObject = {
+            Bucket: bucket,
+            Key: key,
+        };
+
+        console.log('Get Object And ETL : ', params_getObject);
+        let traceData = await s3.getObject(params_getObject).promise();
+        let items = etl(traceData, batchTime, parseline);
+        console.log('ETL Item Count', items.length);
+
+        if (items && items.length > 0) {
+
+            let newBody = buildBody(items);
+            generateBody += newBody;
+
+            if (Buffer.from(newBody).length + lastContentSize >= maxFileSize ) {
+
+                console.log('current body size >= target, is beginning upload... ', Buffer.from(newBody).length + lastContentSize)
+
+                let params_putObject = {
+                    Bucket: bucket,
+                    Key: bodyKey,
+                    Body: generateBody,
+                };
+
+                let rs = await s3.putObject(params_putObject).promise();
+
+                console.log(`ETL Saved To S3 filename ${body.bodyPath}, rs: `, rs);
+
+                generateBody = null;
+                generateBody = "";
+                lastContentSize = 0;
+
+                let dirPath = buildEtlPath(batchTime)
+                var etlTargetFilePath = `etl_test${prefix}/${dirPath}/`;
+                etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
+                bodyKey = etlTargetFilePath;
+
+            } else {
+
+                console.log('current body size < target ',  Buffer.from(newBody).length + lastContentSize);
             }
-
-          console.log("Object File Count from s3 : ", objectList.Contents.length);
-
-          // 成功之后遍历结果
-          for (let object of objectList.Contents) {
-
-            let key = object.Key;
-
-            let params_getObject = {
-              Bucket: bucket,
-              Key: key,
-            };
-
-            console.log('Geting Object And ETL : ', params_getObject);
-            let traceData = await s3.getObject(params_getObject).promise();
-
-            let items = etl(traceData, batchTime, parseline);
-
-            console.log('ETL Item Count', items.length);
-
-
-            if (items && items.length > 0) {
-
-              let body = await buildEtlBody(prefix, batchTime, items);
-
-            //   let keyArray = object.Key.split('\/');
-            //   let keyLength = keyArray.length;
-            //   let fileName = `${etlPath}/${keyArray[keyLength-2]}/${keyArray[keyLength-1]}`;
-
-              let params_putObject = {
-                Bucket: bucket,
-                Key: body.bodyPath,
-                Body: body.body
-              };
-
-            // return;
-
-            console.log("bodyInfo: \n")
-            // console.log(body)
-
-            let rs = await s3.putObject(params_putObject).promise();
-
-            console.log(`ETL Saved To S3 filename ${body.bodyPath}, rs: `, rs);
         }
-
     }
 }
 
-async function buildEtlBody(prefix, batchTime, newItems) {
+var generateBody = "";
+async function generateLastFileInfo(prefix, batchTime, newItems) {
+    if (generateBody.length > 0) {
 
-  let dirPath = buildEtlPath(batchTime)
-  var etlDirPath = `etl_test${prefix}/${dirPath}/`;
-  var etlTargetFilePath = etlDirPath;
+    }
+    //1. 读取旧文件信息
+    let dirPath = buildEtlPath(batchTime)
+    var etlDirPath = `etl_test${prefix}/${dirPath}/`;
+    var etlTargetFilePath = etlDirPath;
 
-  let newBodyString = buildBody(newItems);
+    let newBodyString = buildBody(newItems);
+    let params_fetchDirInfo = {
+        Bucket: bucket,
+        Prefix: etlDirPath,
+    };
 
-  let params_fetchDirInfo = {
-    Bucket: bucket,
-    Prefix: etlDirPath,
-  };
-
-  let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
-
-console.log('ETL existing objects ', etlExitingObjects);
-
-  var writeingToOldFile = false;
-
-  if (etlExitingObjects != null && etlExitingObjects.Contents.length != 0) {
-
+    let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
     let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
-      return a.LastModified.getTime() - b.LastModified.getTime();
+        return a.LastModified.getTime() - b.LastModified.getTime();
     });
     let lastContent = existingObjectContents[existingObjectContents.length - 1];
-
     let lastContentSize = lastContent.Size;
     let lastContentKey = lastContent.Key;
     let keyArray = lastContentKey.split('\/');
 
     if (lastContentSize < maxFileSize) {
+        let params_getLastObject = {
+            Bucket: bucket,
+            Key: lastContentKey,
+        };
+        let lastFile = await s3.getObject(params_getLastObject).promise();
+        let lastFileBody = lastFile.Body.toString();
 
-      let params_getLastObject = {
-        Bucket: bucket,
-        Key:lastContentKey,
-      };
-
-
-      let lastFile = await s3.getObject(params_getLastObject).promise();
-
-      // let lastFileBody = lastFile.Body.toString();
-      var newBodyLength = Buffer.from(newBodyString).length;
-      console.log("ETL new body length", newBodyLength);
-
-      // 清空 body
-      body = "";
-      // 如果新内容+旧内容的大小不超过 100 MB
-      if (newBodyLength + lastContentSize <= maxFileSize) {
-        writeingToOldFile = true;
         etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
-        body += JSON.stringify(lastFileBody);
-      }
+        generateBody += JSON.stringify(lastFileBody);
+
+    } else {
+        etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
+        generateBody = "";
+        lastContentSize = 0;
     }
-  }
 
-  if (!writeingToOldFile) {
-    etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
-  }
+    return {"bodyPath" : etlTargetFilePath,  "body": generateBody, "lastContentSize": lastContentSize};
+}
 
-  body += newBodyString;
-  return {"bodyPath" : etlTargetFilePath,  "body": body};
+
+async function buildEtlBody(prefix, batchTime, newItems) {
+
+    let dirPath = buildEtlPath(batchTime)
+    var etlDirPath = `etl_test${prefix}/${dirPath}/`;
+    var etlTargetFilePath = etlDirPath;
+
+    let newBodyString = buildBody(newItems);
+
+    let params_fetchDirInfo = {
+        Bucket: bucket,
+        Prefix: etlDirPath,
+    };
+
+    let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
+
+    console.log('ETL existing objects ', etlExitingObjects);
+
+    var writeingToOldFile = false;
+
+    if (etlExitingObjects != null && etlExitingObjects.Contents.length != 0) {
+
+        let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
+            return a.LastModified.getTime() - b.LastModified.getTime();
+        });
+        let lastContent = existingObjectContents[existingObjectContents.length - 1];
+
+        let lastContentSize = lastContent.Size;
+        let lastContentKey = lastContent.Key;
+        let keyArray = lastContentKey.split('\/');
+
+        if (lastContentSize < maxFileSize) {
+
+            let params_getLastObject = {
+                Bucket: bucket,
+                Key:lastContentKey,
+            };
+
+
+            let lastFile = await s3.getObject(params_getLastObject).promise();
+
+            let lastFileBody = lastFile.Body.toString();
+            var newBodyLength = Buffer.from(newBodyString).length;
+            console.log("ETL new body length", newBodyLength);
+
+            // 清空 body
+            body = "";
+            // 如果新内容+旧内容的大小不超过 100 MB
+            if (newBodyLength + lastContentSize <= maxFileSize) {
+                writeingToOldFile = true;
+                etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
+                body += JSON.stringify(lastFileBody);
+            }
+        }
+    }
+
+    if (!writeingToOldFile) {
+        etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
+    }
+
+    body += newBodyString;
+    return {"bodyPath" : etlTargetFilePath,  "body": body};
 
 }
 
@@ -305,14 +361,14 @@ class EtlExecutor {
         console.log('ETL batches : ', times.length);
 
         if (this.logtype === 'offer' ||
-            this.logtype === 'record' ||
-            this.logtype === 'cost' ||
-            this.logtype === 'adSlot') {
+          this.logtype === 'record' ||
+          this.logtype === 'cost' ||
+          this.logtype === 'adSlot') {
             let etlInstance = etls[this.logtype];
             await etlInstance.etlBatchExecute(this.logtype);
 
         } else if (this.logtype === 'event' ||
-            this.logtype === 'CbReceiveLogs'
+          this.logtype === 'CbReceiveLogs'
         ) {
             let etlInstance = etls[this.logtype];
             await etlInstance.initDB();
