@@ -110,7 +110,7 @@ const etlBatchExecute = (parseline, prefix) => async batchTime => {
 
     console.log("Object File Count from s3 : ", objectList.Contents.length);
 
-    let lastBodyInfo = await generateLastFileInfo(prefix, batchTime, items);
+    let lastBodyInfo = await generateLastFileInfo(prefix, batchTime);
     // let body = lastBodyInfo.body;
     var bodyKey = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
@@ -166,7 +166,7 @@ const etlBatchExecute = (parseline, prefix) => async batchTime => {
 }
 
 var generateBody = "";
-async function generateLastFileInfo(prefix, batchTime, newItems) {
+async function generateLastFileInfo(prefix, batchTime) {
     if (generateBody.length > 0) {
 
     }
@@ -175,7 +175,7 @@ async function generateLastFileInfo(prefix, batchTime, newItems) {
     var etlDirPath = `etl_test${prefix}/${dirPath}/`;
     var etlTargetFilePath = etlDirPath;
 
-    let newBodyString = buildBody(newItems);
+    // let newBodyString = buildBody(newItems);
     let params_fetchDirInfo = {
         Bucket: bucket,
         Prefix: etlDirPath,
