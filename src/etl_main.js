@@ -154,7 +154,7 @@ async function etlExecute(parseline, prefix, times) {
 
                     let currentTime = times[times.length -1]
                     // 如果是最后一个 time
-                    if (currentTime.getTime() == time.getTime()) {
+                    if (moment.tz(currentTime, 'Asia/Shanghai').getTime() == moment.tz(time, 'Asia/Shanghai').getTime()) {
                         // 将 bodyCache 写入 s3 .
                         await putBodyCacheToS3(bodyPath);
                     }
