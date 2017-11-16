@@ -149,7 +149,7 @@ async function etlExecute(parseline, prefix, times) {
                     // 将 bodyCache 写入 s3 .
                     let rs = await s3.putObject(params_putObject).promise();
 
-                    console.log(`ETL Saved To S3 filename ${body.bodyPath}, rs: `, rs);
+                    console.log(`ETL Saved To S3 filename ${bodyKey}, rs: `, rs);
 
                     // 重置 bodyCache .
                     let newFileInfo = generateNewLastFileInfo(prefix)
