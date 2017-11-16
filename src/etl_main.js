@@ -140,8 +140,6 @@ async function etlExecute(parseline, prefix, times) {
                 // 如果 bodyCache 的大小超过了 maxFileSize，进行上传，并重置 bodyCache.
                 if (lastContentSize >= maxFileSize ) {
 
-
-
                     // var gzip = zlib.createGZip();
                     // var out = fs.createWriteStream('./111.gz');
 
@@ -152,12 +150,12 @@ async function etlExecute(parseline, prefix, times) {
                         console.log("数据写入成功！");
                         console.log("--------我是分割线-------------")
                         console.log("读取写入的数据！");
-                        fs.readFile('./inputtest', function (err, data) {
-                            if (err) {
-                                return console.error(err);
-                            }
-                            console.log("异步读取文件数据: " + data.toString());
-                        });
+
+                        var gzip = zlib.createGzip();
+                        var inFile = fs.createReadStream('./inputtest');
+                        var outFile = fs.createWriteStream('./test.gz');
+
+                        inFile.pipe(gzip).pipe(outFile);
                     });
 
                     console.log('bodyCache size >= Max, is beginning upload... ', lastContentSize)
