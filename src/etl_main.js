@@ -89,7 +89,7 @@ async function etlExecute(parseline, prefix, times) {
 
     let batchTime = times[0];
 
-    let lastBodyInfo = await generateLastFileInfo(prefix, batchTime);
+    let lastBodyInfo = await generateNewLastFileInfo(prefix, batchTime);
     var bodyKey = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
@@ -176,7 +176,7 @@ const etlBatchExecute = (parseline, prefix) => async batchTime => {
 }
 
 var generateBody = "";
-async function generateLastFileInfo(prefix, batchTime) {
+async function generateNewLastFileInfo(prefix, batchTime) {
 
     //1. 读取旧文件信息
     let dirPath = buildEtlPath(batchTime)
@@ -189,32 +189,48 @@ async function generateLastFileInfo(prefix, batchTime) {
         Prefix: etlDirPath,
     };
 
+    var lastContentSize = 0;
+
     let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
-    let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
-        return a.LastModified.getTime() - b.LastModified.getTime();
-    });
-    let lastContent = existingObjectContents[existingObjectContents.length - 1];
-    let lastContentSize = lastContent.Size;
-    let lastContentKey = lastContent.Key;
-    let keyArray = lastContentKey.split('\/');
 
-    if (lastContentSize < maxFileSize) {
-        let params_getLastObject = {
-            Bucket: bucket,
-            Key: lastContentKey,
-        };
-        let lastFile = await s3.getObject(params_getLastObject).promise();
-        let lastFileBody = lastFile.Body.toString();
+    if (etlExitingObjects != null && etlExitingObjects.Contents.length != 0) {
 
-        etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
-        generateBody += JSON.stringify(lastFileBody);
+        let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
+            return a.LastModified.getTime() - b.LastModified.getTime();
+        });
+        let lastContent = existingObjectContents[existingObjectContents.length - 1];
+        let lastContentKey = lastContent.Key;
+        let keyArray = lastContentKey.split('\/');
+        lastContentSize = lastContent.Size;
+
+        if (lastContentSize < maxFileSize) {
+            let params_getLastObject = {
+                Bucket: bucket,
+                Key: lastContentKey,
+            };
+            let lastFile = await s3.getObject(params_getLastObject).promise();
+            let lastFileBody = lastFile.Body.toString();
+
+            etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
+            generateBody += JSON.stringify(lastFileBody);
+
+        } else {
+            return generateNewLastFileInfo(prefix, batchTime);
+        }
 
     } else {
-        etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
-        generateBody = "";
-        lastContentSize = 0;
+        return generateNewLastFileInfo(prefix, batchTime);
     }
 
+    return {"bodyPath" : etlTargetFilePath,  "body": generateBody, "lastContentSize": lastContentSize};
+}
+
+async function generateNewLastFileInfo(prefix, batchTime) {
+    generateBody = "";
+    let dirPath = buildEtlPath(batchTime);
+    var etlTargetFilePath = `etl_test${prefix}/${dirPath}/`;
+    etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
+    let lastContentSize = 0;
     return {"bodyPath" : etlTargetFilePath,  "body": generateBody, "lastContentSize": lastContentSize};
 }
 
