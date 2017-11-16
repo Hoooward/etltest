@@ -82,8 +82,8 @@ var buildBody = function (items) {
 async function etlExecute(parseline, prefix, times) {
 
     // 获取 s3 中与当前时间关联的最后一个文件的信息
-    let batchTime = times[0];
-    let lastBodyInfo = await getLastFileInfo(prefix, batchTime);
+    let oneBatchTime = times[0];
+    let lastBodyInfo = await getLastFileInfo(prefix, oneBatchTime);
     var bodyKey = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
@@ -125,7 +125,7 @@ async function etlExecute(parseline, prefix, times) {
             console.log('Get Object And ETL : ', params_getObject);
             let traceData = await s3.getObject(params_getObject).promise();
 
-            let items = etl(traceData, batchTime, parseline);
+            let items = etl(traceData, time, parseline);
             console.log('ETL Item Count', items.length);
 
             if (items && items.length > 0) {
