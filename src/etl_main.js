@@ -13,7 +13,7 @@ const etls = {
 const bucket = 'com.yodamob.adserver.track';
 
 var body = "";
-const maxFileSize = 100 * 1024 * 1024;
+const maxFileSize = 500 * 1024 * 1024;
 
 var etlFn = parseline => (data, batchTime) => {
 
@@ -176,8 +176,11 @@ async function buildEtlBody(prefix, batchTime, newItems) {
 
   if (etlExitingObjects != null && etlExitingObjects.Contents.length != 0) {
 
-    let existingObjectContents = etlExitingObjects.Contents;
+    let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
+      return a.LastModified.getTime() - b.LastModified.getTime();
+    });
     let lastContent = existingObjectContents[existingObjectContents.length - 1];
+
     let lastContentSize = lastContent.Size;
     let lastContentKey = lastContent.Key;
     let keyArray = lastContentKey.split('\/');
