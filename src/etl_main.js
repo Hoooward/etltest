@@ -84,7 +84,7 @@ async function etlExecute(parseline, prefix, times) {
     // 获取 s3 中与当前时间关联的最后一个文件的信息
     let oneBatchTime = times[0];
     let lastBodyInfo = await getLastFileInfo(prefix, oneBatchTime);
-    var bodyKey = lastBodyInfo.bodyPath;
+    var bodyPath = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
     for (var time of times) {
@@ -140,29 +140,39 @@ async function etlExecute(parseline, prefix, times) {
 
                     console.log('bodyCache size >= Max, is beginning upload... ', lastContentSize)
 
-                    let params_putObject = {
-                        Bucket: bucket,
-                        Key: bodyKey,
-                        Body: bodyCache,
-                    };
-
                     // 将 bodyCache 写入 s3 .
-                    let rs = await s3.putObject(params_putObject).promise();
-
-                    console.log(`ETL Saved To S3 filename ${bodyKey}, rs: `, rs);
+                    await putBodyCacheToS3(bodyPath)
+                    console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
 
                     // 重置 bodyCache .
                     let newFileInfo = generateNewLastFileInfo(prefix)
                     lastContentSize = newFileInfo.lastContentSize;
-                    bodyKey = newFileInfo.bodyPath;
+                    bodyPath = newFileInfo.bodyPath;
 
                 } else {
                     console.log('bodyCache size < Max ', lastContentSize);
 
+                    let currentTime = times[times.length -1]
+                    // 如果是最后一个 time
+                    if (currentTime.getTime() == time.getTime()) {
+                        // 将 bodyCache 写入 s3 .
+                        await putBodyCacheToS3(bodyPath);
+                    }
                 }
             }
         }
     }
+}
+
+async function putBodyCacheToS3(bodyPath) {
+    let params_putObject = {
+        Bucket: bucket,
+        Key: bodyPath,
+        Body: bodyCache,
+    };
+    let rs = await s3.putObject(params_putObject).promise();
+    console.log(`ETL Saved To S3 filename ${bodyKey}, rs: `, rs);
+    bodyCache = ""
 }
 
 async function getLastFileInfo(prefix, batchTime) {
