@@ -143,20 +143,30 @@ async function etlExecute(parseline, prefix, times) {
                     // var gzip = zlib.createGZip();
                     // var out = fs.createWriteStream('./111.gz');
 
-                    fs.writeFile('./inputtest', bodyCache,  function(err, data) {
-                        if (err) {
-                            return console.error(err);
-                        }
-                        console.log("数据写入成功！");
-                        console.log("--------我是分割线-------------")
-                        console.log("读取写入的数据！");
+                    let result = await fs.writeFile('./inputtest', bodyCache).promise();
 
-                        var gzip = zlib.createGzip();
-                        var inFile = fs.createReadStream('./inputtest');
-                        var outFile = fs.createWriteStream('./test.gz');
 
-                        inFile.pipe(gzip).pipe(outFile);
-                    });
+                    console.log(result);
+                    console.log("数据写入成功！");
+                    console.log("--------我是分割线-------------")
+                    console.log("读取写入的数据！");
+
+                    var gzip = zlib.createGzip();
+                    var inFile = fs.createReadStream('./inputtest');
+                    var outFile = fs.createWriteStream('./test.gz');
+
+                    inFile.pipe(gzip).pipe(outFile);
+
+                    let gzipfile = await fs.readFile('./test.gs').promise();
+
+                    console.log('gzipfile', gzipfile);
+                    let params_putObject = {
+                        Bucket: bucket,
+                        Key: bodyPath,
+                        Body: gzipfile,
+                    };
+
+                    let rs = await s3.putObject(params_putObject).promise();
 
                     console.log('bodyCache size >= Max, is beginning upload... ', lastContentSize)
 
