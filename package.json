@@ -11,7 +11,9 @@
   "dependencies": {
     "aws-sdk": "^2.149.0",
     "commander": "^2.11.0",
+    "fs": "0.0.1-security",
     "moment-timezone": "^0.5.14",
-    "numeral": "^2.0.6"
+    "numeral": "^2.0.6",
+    "zlib": "^1.0.5"
   }
 }

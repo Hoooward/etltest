@@ -5,6 +5,8 @@ const s3 = new aws.S3({
 });
 const moment = require('moment-timezone');
 const numeral = require('numeral');
+const zlib = require('zlib');
+const fs = require('fs');
 
 const etls = {
     'click': require('./etl_click'),
@@ -137,6 +139,26 @@ async function etlExecute(parseline, prefix, times) {
 
                 // 如果 bodyCache 的大小超过了 maxFileSize，进行上传，并重置 bodyCache.
                 if (lastContentSize >= maxFileSize ) {
+
+
+
+                    var gzip = zlib.createGZip();
+                    var out = fs.createWriteStream('./111.gz');
+
+                    fs.writeFile('./inputtest', bodyCache,  function(err, data) {
+                        if (err) {
+                            return console.error(err);
+                        }
+                        console.log("数据写入成功！");
+                        console.log("--------我是分割线-------------")
+                        console.log("读取写入的数据！");
+                        fs.readFile('./inputtest', function (err, data) {
+                            if (err) {
+                                return console.error(err);
+                            }
+                            console.log("异步读取文件数据: " + data.toString());
+                        });
+                    });
 
                     console.log('bodyCache size >= Max, is beginning upload... ', lastContentSize)
 
