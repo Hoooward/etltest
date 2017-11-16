@@ -144,7 +144,7 @@ async function etlExecute(parseline, prefix, times) {
                     await putBodyCacheToS3(bodyPath)
 
                     // 重置 bodyCache .
-                    let newFileInfo = generateNewLastFileInfo(prefix)
+                    let newFileInfo = generateNewLastFileInfo(prefix, time)
                     lastContentSize = newFileInfo.lastContentSize;
                     bodyPath = newFileInfo.bodyPath;
 
