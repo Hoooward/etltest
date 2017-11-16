@@ -142,8 +142,8 @@ async function etlExecute(parseline, prefix, times) {
 
 
 
-                    var gzip = zlib.createGZip();
-                    var out = fs.createWriteStream('./111.gz');
+                    // var gzip = zlib.createGZip();
+                    // var out = fs.createWriteStream('./111.gz');
 
                     fs.writeFile('./inputtest', bodyCache,  function(err, data) {
                         if (err) {
