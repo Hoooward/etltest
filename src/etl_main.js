@@ -145,7 +145,6 @@ async function etlExecute(parseline, prefix, times) {
 
                     let result = await fs.writeFile('./inputtest', bodyCache).promise();
 
-
                     console.log(result);
                     console.log("数据写入成功！");
                     console.log("--------我是分割线-------------")
@@ -157,13 +156,14 @@ async function etlExecute(parseline, prefix, times) {
 
                     inFile.pipe(gzip).pipe(outFile);
 
-                    let gzipfile = await fs.readFile('./test.gs').promise();
 
-                    console.log('gzipfile', gzipfile);
+                    let gzfile = await fs.readFile('/.test.gz', null).promise();
+
+                    console.log('gzfile', gzfile);
                     let params_putObject = {
                         Bucket: bucket,
                         Key: bodyPath,
-                        Body: gzipfile,
+                        Body: gzfile,
                     };
 
                     let rs = await s3.putObject(params_putObject).promise();
