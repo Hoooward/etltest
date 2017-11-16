@@ -111,7 +111,6 @@ const etlBatchExecute = (parseline, prefix) => async batchTime => {
     console.log("Object File Count from s3 : ", objectList.Contents.length);
 
     let lastBodyInfo = await generateLastFileInfo(prefix, batchTime);
-    // let body = lastBodyInfo.body;
     var bodyKey = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
@@ -133,8 +132,9 @@ const etlBatchExecute = (parseline, prefix) => async batchTime => {
 
             let newBody = buildBody(items);
             generateBody += newBody;
+            lastContentSize += Buffer.from(newBody).length;
 
-            if (Buffer.from(newBody).length + lastContentSize >= maxFileSize ) {
+            if (lastContentSize >= maxFileSize ) {
 
                 console.log('current body size >= target, is beginning upload... ', Buffer.from(newBody).length + lastContentSize)
 
