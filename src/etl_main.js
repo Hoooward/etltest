@@ -13,7 +13,7 @@ const etls = {
 const bucket = 'com.yodamob.adserver.track';
 
 var body = "";
-const maxFileSize = 500 * 1024 * 1024;
+const maxFileSize = 80 * 1024 * 1024;
 
 var etlFn = parseline => (data, batchTime) => {
 
@@ -193,7 +193,7 @@ console.log('ETL existing objects ', etlExitingObjects);
       };
 
 
-      // let lastFile = await s3.getObject(params_getLastObject).promise();
+      let lastFile = await s3.getObject(params_getLastObject).promise();
 
       // let lastFileBody = lastFile.Body.toString();
       var newBodyLength = Buffer.from(newBodyString).length;
