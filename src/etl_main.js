@@ -11,14 +11,12 @@ const etls = {
 }
 
 const bucket = 'com.yodamob.adserver.track';
+const maxFileSize = 100 * 1024 * 1024;
 
-var body = "";
+var bodyCache = "";
 
-const maxFileSize = 80 * 1024 * 1024;
 
 var etlFn = parseline => (data, batchTime) => {
-
-    //console.log(data.Body.toString());
 
     var beijingTime = moment.tz(batchTime, 'Asia/Shanghai').tz('Asia/Shanghai');
     var batchTimeValue = beijingTime.format('YYYYMMDDHHmm');
@@ -51,55 +49,52 @@ var etlFn = parseline => (data, batchTime) => {
     return dataSaveArray;
 }
 
-var buildEtlPath = function (time) {
+var buildEtlPath = function (prefix, time) {
     var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
     var path = beijingTime.format('YYYYMMDD');
-    return path;
+    return `etl_test${prefix}/${path}/`
+}
+
+var generateNewLastFileInfo = function (prefix, batchTime) {
+    bodyCache = "";
+    let lastContentSize = 0;
+    var etlTargetFilePath = buildEtlPath(prefix, batchTime) + `${Math.random().toString(36).substr(2)}`;
+    return {"bodyPath" : etlTargetFilePath,  "body": bodyCache, "lastContentSize": lastContentSize};
 }
 
 var buildPath = function (time) {
 
-    //console.log(time);
-
     var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
-
-    //console.log(beijingTime.format());
-
     var mm = beijingTime.format('mm'); // numeral(parseInt(parseInt(beijingTime.format('mm')) / 10) * 10).format('00');
-
     var path = beijingTime.format('YYYYMMDD/HH') + mm;
-
     return path;
-
 }
-
 
 var buildBody = function (items) {
 
     var body = "";
-
     for (var item of items) {
         body = body + JSON.stringify(item) + '\n';
     }
     return body;
-
 }
 
 async function etlExecute(parseline, prefix, times) {
 
+    // 获取 s3 中与当前时间关联的最后一个文件的信息
     let batchTime = times[0];
-
-    let lastBodyInfo = await generateNewLastFileInfo(prefix, batchTime);
+    let lastBodyInfo = await getLastFileInfo(prefix, batchTime);
     var bodyKey = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
     for (var time of times) {
 
-        console.log('etlBatchExecute start, batchTime : ', batchTime);
+        console.log('\n\n\n');
+        console.log('etlBatchExecute start, batchTime : ', time);
 
+        // 生成原始文件信息路径
         var path = buildPath(time);
         var trackPath = `${prefix}/${path}/`;
-        var etlPath = `etl_test${prefix}/dt=${path}`;
         var etl = etlFn(parseline);
 
         var params_listObject = {
@@ -118,7 +113,7 @@ async function etlExecute(parseline, prefix, times) {
 
         console.log("Object File Count from s3 : ", objectList.Contents.length);
 
-        // 成功之后遍历结果
+        // 遍历当前时间切换的原始数据， 添加到 bodyCache 中.
         for (let object of objectList.Contents) {
 
             let key = object.Key;
@@ -129,58 +124,51 @@ async function etlExecute(parseline, prefix, times) {
 
             console.log('Get Object And ETL : ', params_getObject);
             let traceData = await s3.getObject(params_getObject).promise();
+
             let items = etl(traceData, batchTime, parseline);
             console.log('ETL Item Count', items.length);
 
             if (items && items.length > 0) {
 
+                // 将文件信息整合到 bodyCache 中
                 let newBody = buildBody(items);
-                generateBody += newBody;
+                bodyCache += newBody;
                 lastContentSize += Buffer.from(newBody).length;
 
+                // 如果 bodyCache 的大小超过了 maxFileSize，进行上传，并重置 bodyCache.
                 if (lastContentSize >= maxFileSize ) {
 
-                    console.log('current body size >= target, is beginning upload... ', Buffer.from(newBody).length + lastContentSize)
+                    console.log('bodyCache size >= Max, is beginning upload... ', lastContentSize)
 
                     let params_putObject = {
                         Bucket: bucket,
                         Key: bodyKey,
-                        Body: generateBody,
+                        Body: bodyCache,
                     };
 
+                    // 将 bodyCache 写入 s3 .
                     let rs = await s3.putObject(params_putObject).promise();
 
                     console.log(`ETL Saved To S3 filename ${body.bodyPath}, rs: `, rs);
 
-                    generateBody = null;
-                    generateBody = "";
-                    lastContentSize = 0;
-
-                    let dirPath = buildEtlPath(batchTime)
-                    var etlTargetFilePath = `etl_test${prefix}/${dirPath}/`;
-                    etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
-                    bodyKey = etlTargetFilePath;
+                    // 重置 bodyCache .
+                    let newFileInfo = generateNewLastFileInfo(prefix)
+                    lastContentSize = newFileInfo.lastContentSize;
+                    bodyKey = newFileInfo.bodyPath;
 
                 } else {
+                    console.log('bodyCache size < Max ', lastContentSize);
 
-                    console.log('current body size < target ',  Buffer.from(newBody).length + lastContentSize);
                 }
             }
         }
     }
 }
 
-const etlBatchExecute = (parseline, prefix) => async batchTime => {
-
-
-}
-
-var generateBody = "";
-async function generateNewLastFileInfo(prefix, batchTime) {
+async function getLastFileInfo(prefix, batchTime) {
 
     //1. 读取旧文件信息
-    let dirPath = buildEtlPath(batchTime)
-    var etlDirPath = `etl_test${prefix}/${dirPath}/`;
+    let etlDirPath= buildEtlPath(prefix, batchTime);
     var etlTargetFilePath = etlDirPath;
 
     // let newBodyString = buildBody(newItems);
@@ -192,7 +180,6 @@ async function generateNewLastFileInfo(prefix, batchTime) {
     var lastContentSize = 0;
 
     let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
-
     if (etlExitingObjects != null && etlExitingObjects.Contents.length != 0) {
 
         let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
@@ -212,7 +199,9 @@ async function generateNewLastFileInfo(prefix, batchTime) {
             let lastFileBody = lastFile.Body.toString();
 
             etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
-            generateBody += JSON.stringify(lastFileBody);
+            bodyCache += JSON.stringify(lastFileBody);
+
+            return {"bodyPath" : etlTargetFilePath,  "body": bodyCache, "lastContentSize": lastContentSize};
 
         } else {
             return generateNewLastFileInfo(prefix, batchTime);
@@ -221,112 +210,26 @@ async function generateNewLastFileInfo(prefix, batchTime) {
     } else {
         return generateNewLastFileInfo(prefix, batchTime);
     }
-
-    return {"bodyPath" : etlTargetFilePath,  "body": generateBody, "lastContentSize": lastContentSize};
-}
-
-async function generateNewLastFileInfo(prefix, batchTime) {
-    generateBody = "";
-    let dirPath = buildEtlPath(batchTime);
-    var etlTargetFilePath = `etl_test${prefix}/${dirPath}/`;
-    etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
-    let lastContentSize = 0;
-    return {"bodyPath" : etlTargetFilePath,  "body": generateBody, "lastContentSize": lastContentSize};
-}
-
-
-async function buildEtlBody(prefix, batchTime, newItems) {
-
-    let dirPath = buildEtlPath(batchTime)
-    var etlDirPath = `etl_test${prefix}/${dirPath}/`;
-    var etlTargetFilePath = etlDirPath;
-
-    let newBodyString = buildBody(newItems);
-
-    let params_fetchDirInfo = {
-        Bucket: bucket,
-        Prefix: etlDirPath,
-    };
-
-    let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
-
-    console.log('ETL existing objects ', etlExitingObjects);
-
-    var writeingToOldFile = false;
-
-    if (etlExitingObjects != null && etlExitingObjects.Contents.length != 0) {
-
-        let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
-            return a.LastModified.getTime() - b.LastModified.getTime();
-        });
-        let lastContent = existingObjectContents[existingObjectContents.length - 1];
-
-        let lastContentSize = lastContent.Size;
-        let lastContentKey = lastContent.Key;
-        let keyArray = lastContentKey.split('\/');
-
-        if (lastContentSize < maxFileSize) {
-
-            let params_getLastObject = {
-                Bucket: bucket,
-                Key:lastContentKey,
-            };
-
-
-            let lastFile = await s3.getObject(params_getLastObject).promise();
-
-            let lastFileBody = lastFile.Body.toString();
-            var newBodyLength = Buffer.from(newBodyString).length;
-            console.log("ETL new body length", newBodyLength);
-
-            // 清空 body
-            body = "";
-            // 如果新内容+旧内容的大小不超过 100 MB
-            if (newBodyLength + lastContentSize <= maxFileSize) {
-                writeingToOldFile = true;
-                etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
-                body += JSON.stringify(lastFileBody);
-            }
-        }
-    }
-
-    if (!writeingToOldFile) {
-        etlTargetFilePath += `${Math.random().toString(36).substr(2)}`;
-    }
-
-    body += newBodyString;
-    return {"bodyPath" : etlTargetFilePath,  "body": body};
-
 }
 
 function buildHourTimes(hour) {
 
     var times = [];
-
     for (var i = 0; i < 6; i++) {
-
         var t = hour + i + '0';
         times.push(moment.tz(t, 'YYYYMMDDHHmm', 'Asia/Shanghai'));
-
     }
-
     return times;
-
 }
 
 function buildDayTimes(day) {
 
     var times = [];
-
     for (var i = 0; i < 24; i++) {
         var hour = day + numeral(i).format('00');
-
         times = times.concat(buildHourTimes(hour));
-
     }
-
     return times;
-
 }
 
 function buildTimes(time) {
@@ -410,10 +313,10 @@ class EtlExecutor {
                 throw new Error(`something wrong with param, pls check!\ntime:${this.time}\n$logtype:${this.logtype}\n$etlInstance:${etls[this.logtype]}`);
             }
 
-            await  etlExecute(parseline, prefix, times)
-            for (var time of times) {
+            await etlExecute(parseline, prefix, times);
+            // for (var time of times) {
                 // await etlBatchExecute(parseline, prefix)(time);
-            }
+            // }
         }
     }
 }
