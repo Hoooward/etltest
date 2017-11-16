@@ -157,7 +157,7 @@ async function etlExecute(parseline, prefix, times) {
                     inFile.pipe(gzip).pipe(outFile);
 
 
-                    let gzfile = await fs.readFile('/.test.gz', null).promise();
+                    let gzfile = await fs.readFile('./test.gz', null).promise();
 
                     console.log('gzfile', gzfile);
                     let params_putObject = {
