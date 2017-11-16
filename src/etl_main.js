@@ -171,7 +171,7 @@ async function putBodyCacheToS3(bodyPath) {
         Body: bodyCache,
     };
     let rs = await s3.putObject(params_putObject).promise();
-    console.log(`ETL Saved To S3 filename ${bodyKey}, rs: `, rs);
+    console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
     bodyCache = ""
 }
 
