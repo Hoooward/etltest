@@ -87,7 +87,6 @@ async function etlExecute(parseline, prefix, times) {
     var bodyPath = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
-    var lastTime = times[times.length - 1];
     for (var time of times) {
 
         console.log('\n\n\n');
@@ -151,15 +150,14 @@ async function etlExecute(parseline, prefix, times) {
 
                 } else {
                     console.log('bodyCache size < Max ', lastContentSize);
-
-                    // 如果是最后一个 time
-                    if (lastTime == time) {
-                        // 将 bodyCache 写入 s3 .
-                        await putBodyCacheToS3(bodyPath);
-                    }
                 }
             }
         }
+    }
+
+    // 将剩余不足 100 mb 的数据写入 s3
+    if (bodyCache.length != 0 && lastContentSize != 0) {
+        await putBodyCacheToS3(bodyPath);
     }
 }
 
