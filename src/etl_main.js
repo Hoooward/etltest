@@ -148,7 +148,18 @@ async function etlExecute(parseline, prefix, times) {
                     let exists = fs.existsSync(sourceDir)
                     if (!exists) {
                         fs.mkdirSync(sourceDir);
+                    } else {
+
+                        if (writeBodyCount == 0) {
+                            for (var item of fs.readdirSync(sourceDir)) {
+                                fs.unlinkSync(sourceDir + item);
+                            }
+                            for (var item of  fs.readdirSync(outDir)) {
+                                fs.unlinkSync(outDir + item)
+                            }
+                        }
                     }
+
 
                     let writeError = fs.appendFileSync(sourceFilePath, bodyCache);
 
@@ -201,13 +212,6 @@ async function etlExecute(parseline, prefix, times) {
                         let rs = await s3.putObject(params_putObject).promise();
                         console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
 
-                        for (var item of fs.readdirSync(sourceDir)) {
-                            fs.unlinkSync(sourceDir + item);
-                        }
-
-                        for (var item of  fs.readdirSync(outDir)) {
-                            fs.unlinkSync(outDir + item)
-                        }
 
                         // 重置 bodyCache .
                         let newFileInfo = generateNewLastFileInfo(prefix, time)
