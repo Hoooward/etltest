@@ -175,7 +175,11 @@ async function etlExecute(parseline, prefix, times) {
                         var outFilePath = './' + Math.random().toString(36).substr(2) + '.gz';
                         var outFile = fs.createWriteStream(outFilePath);
 
-                        inFile.pipe(gzip).pipe(outFile).onAsync('finish', async function () {
+
+                        let zipResult = await inFile.pipe(gzip).pipe(outFile)
+                        console.log('zipResult', zipResult);
+
+                        await inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
 
                             console.log('done compressing...');
 
@@ -189,7 +193,6 @@ async function etlExecute(parseline, prefix, times) {
                             };
 
                             let rs = await s3.putObject(params_putObject).promise();
-
                             console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
 
                         });
@@ -203,7 +206,6 @@ async function etlExecute(parseline, prefix, times) {
 
                     // 将 bodyCache 写入 s3 .
                     // await putBodyCacheToS3(bodyPath)
-
 
                 } else {
                     console.log('bodyCache size < Max ', lastContentSize);
