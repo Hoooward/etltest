@@ -55,8 +55,8 @@
       <file leaf-file-name="etl_main.js" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/etl_main.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="-1871">
-              <caret line="91" column="4" lean-forward="false" selection-start-line="91" selection-start-column="4" selection-end-line="91" selection-end-column="4" />
+            <state relative-caret-position="728">
+              <caret line="231" column="4" lean-forward="false" selection-start-line="231" selection-start-column="4" selection-end-line="231" selection-end-column="4" />
               <folding />
             </state>
           </provider>
@@ -65,8 +65,8 @@
       <file leaf-file-name="fs.js" pinned="false" current-in-tab="false">
         <entry file="file://$APPLICATION_CONFIG_DIR$/javascript/nodejs/8.9.0/core-modules/fs.js">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="125">
-              <caret line="1285" column="0" lean-forward="false" selection-start-line="1285" selection-start-column="0" selection-end-line="1285" selection-end-column="0" />
+            <state relative-caret-position="267">
+              <caret line="899" column="0" lean-forward="false" selection-start-line="899" selection-start-column="0" selection-end-line="899" selection-end-column="0" />
               <folding />
             </state>
           </provider>
@@ -236,12 +236,12 @@
       <updated>1510653425161</updated>
       <workItem from="1510653426492" duration="15820000" />
       <workItem from="1510734611801" duration="30546000" />
-      <workItem from="1510826910868" duration="14665000" />
+      <workItem from="1510826910868" duration="16308000" />
     </task>
     <servers />
   </component>
   <component name="TimeTrackingManager">
-    <option name="totallyTimeSpent" value="61031000" />
+    <option name="totallyTimeSpent" value="62674000" />
   </component>
   <component name="ToolWindowManager">
     <frame x="0" y="0" width="1440" height="900" extended-state="0" />
@@ -256,7 +256,7 @@
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Mongo Explorer" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Terminal" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.32900944" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Debug" active="true" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" show_stripe_button="true" weight="0.5" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.5" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" show_stripe_button="true" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
@@ -411,22 +411,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$APPLICATION_CONFIG_DIR$/javascript/nodejs/8.9.0/core-modules/fs.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="125">
-          <caret line="1285" column="0" lean-forward="false" selection-start-line="1285" selection-start-column="0" selection-end-line="1285" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/main.js">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="270">
-          <caret line="15" column="17" lean-forward="false" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/src/etl_click.js">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="396">
@@ -443,10 +427,26 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$APPLICATION_CONFIG_DIR$/javascript/nodejs/8.9.0/core-modules/fs.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="267">
+          <caret line="899" column="0" lean-forward="false" selection-start-line="899" selection-start-column="0" selection-end-line="899" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/main.js">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="270">
+          <caret line="15" column="17" lean-forward="false" selection-start-line="15" selection-start-column="17" selection-end-line="15" selection-end-column="17" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/etl_main.js">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="-1871">
-          <caret line="91" column="4" lean-forward="false" selection-start-line="91" selection-start-column="4" selection-end-line="91" selection-end-column="4" />
+        <state relative-caret-position="728">
+          <caret line="231" column="4" lean-forward="false" selection-start-line="231" selection-start-column="4" selection-end-line="231" selection-end-column="4" />
           <folding />
         </state>
       </provider>

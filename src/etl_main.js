@@ -115,7 +115,6 @@ async function etlExecute(parseline, prefix, times) {
         }
 
         console.log("Object File Count from s3 : ", objectList.Contents.length);
-
         // 遍历当前时间切换的原始数据， 添加到 bodyCache 中.
         for (let object of objectList.Contents) {
 
@@ -145,12 +144,12 @@ async function etlExecute(parseline, prefix, times) {
 
                     var sourceDir = './sources/'
                     var sourceFilePath = sourceDir + 'baseData'
+
                     let exists = fs.existsSync(sourceDir)
                     if (!exists) {
                         fs.mkdirSync(sourceDir);
                     }
 
-                    // var sourceFilePath = baseFilePath + Math.random().toString(36).substr(2)
                     let writeError = fs.appendFileSync(sourceFilePath, bodyCache);
 
                     if (writeError) {
@@ -171,12 +170,18 @@ async function etlExecute(parseline, prefix, times) {
                         console.log('Begin make zip and update...')
                         console.log("---------------------")
 
+
+                        let sourceResult = fs.readdirSync(sourceDir);
+                        if (sourceResult.length != 0) {
+                            fs.unlinkSync(sourceFilePath);
+                        }
+
                         // 将所有文件写成一个文件
                         var gzip = zlib.createGzip();
                         var inFile = fs.createReadStream(sourceFilePath);
-                        var outFilePath = './' + Math.random().toString(36).substr(2) + '.gz';
+                        var outDir = './gzip/';
+                        var outFilePath = outDir + Math.random().toString(36).substr(2) + '.gz';
                         var outFile = fs.createWriteStream(outFilePath);
-
 
                         var gzipFinished = new Promise(function (resolve, reject) {
                             inFile.pipe(gzip).pipe(outFile).on('finish', ()=>{
@@ -184,46 +189,43 @@ async function etlExecute(parseline, prefix, times) {
                             })
                         })
 
-
-
-
                         let zipResult = await gzipFinished;
                         console.log(zipResult)
                         console.log('new zip file', outFile);
 
                         writeBodyCount = 0;
 
-                        // inFile.pipe(gzip).pipe(outFile).on('finish', function () {
-                        //
-                        //     console.log('done compressing...');
-                        //
-                        //     let resultGzipFile = fs.readFileSync(outFilePath);
-                        //     console.log('resultGzipFile,', resultGzipFile);
-                        //
-                        //     let params_putObject = {
-                        //         Bucket: bucket,
-                        //         Key: bodyPath,
-                        //         Body: resultGzipFile,
-                        //     };
-                        //
-                        //     let rs = await s3.putObject(params_putObject).promise();
-                        //     console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
-                        //
-                        //
-                        // });
+                        let resultGzipFile = fs.readFileSync(outFilePath);
+                        console.log('resultGzipFile,', resultGzipFile);
+
+                        let params_putObject = {
+                            Bucket: bucket,
+                            Key: bodyPath,
+                            Body: resultGzipFile,
+                        };
+
+                        let rs = await s3.putObject(params_putObject).promise();
+                        console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
+
+                        let sourceResult = fs.readdirSync(sourceDir);
+                        for (var item of sourceDir) {
+                            fs.unlinkSync(sourceDir + item);
+                        }
+
+                        let gzipResult = fs.readdirSync(outDir);
+                        for (var item of outDir) {
+                            fs.unlinkSync(outDir + item)
+                        }
+
+                        // 重置 bodyCache .
+                        let newFileInfo = generateNewLastFileInfo(prefix, time)
+                        lastContentSize = newFileInfo.lastContentSize;
+                        bodyPath = newFileInfo.bodyPath;
                     }
-                    console.log('bodyCache size >= Max, is save... ', lastContentSize)
-                    // 重置 bodyCache .
-                    let newFileInfo = generateNewLastFileInfo(prefix, time)
-                    lastContentSize = newFileInfo.lastContentSize;
-                    bodyPath = newFileInfo.bodyPath;
-
-
-                    // 将 bodyCache 写入 s3 .
-                    // await putBodyCacheToS3(bodyPath)
 
                 } else {
-                    console.log('bodyCache size < Max ', lastContentSize);
+
+                    console.log('bodyCache size => ', lastContentSize);
                 }
             }
         }
