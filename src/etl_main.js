@@ -184,23 +184,23 @@ async function etlExecute(parseline, prefix, times) {
 
                         let zipResult = await gzipFinished;
                         console.log(zipResult)
-                        console.log('new zip file', outFile);
+                        // console.log('new zip file', outFile);
 
                         writeBodyCount = 0;
 
-                        // let resultGzipFile = fs.readFileSync(outFilePath);
-                        // console.log('resultGzipFile,', resultGzipFile);
+                        let resultGzipFile = fs.readFileSync(outFilePath);
+                        console.log('resultGzipFile,', resultGzipFile);
 
-                        // let params_putObject = {
-                        //     Bucket: bucket,
-                        //     Key: bodyPath + ".gz",
-                        //     Body: outFile,
-                        // };
-                        //
-                        // let rs = await s3.putObject(params_putObject).promise();
-                        // console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
-                        //
-                        // await deleteOldDataFrom(outDir)
+                        let params_putObject = {
+                            Bucket: bucket,
+                            Key: bodyPath + ".gz",
+                            Body: outFile,
+                        };
+
+                        let rs = await s3.putObject(params_putObject).promise();
+                        console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
+
+                        await deleteOldDataFrom(outDir)
 
                         // 重置 bodyCache .
                         let newFileInfo = generateNewLastFileInfo(prefix, time)
