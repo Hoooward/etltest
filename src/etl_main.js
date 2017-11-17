@@ -13,7 +13,7 @@ const etls = {
 }
 
 const bucket = 'com.yodamob.adserver.track';
-const maxFileSize = 200 * 1024 * 1024;
+const maxFileSize = 80 * 1024 * 1024;
 
 var bodyCache = "";
 
