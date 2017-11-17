@@ -89,6 +89,7 @@ async function etlExecute(parseline, prefix, times) {
     var bodyPath = lastBodyInfo.bodyPath;
     var lastContentSize = lastBodyInfo.lastContentSize;
 
+    var writeBodyCount = 0;
     for (var time of times) {
 
         console.log('\n\n\n');
@@ -140,7 +141,6 @@ async function etlExecute(parseline, prefix, times) {
 
                 // 如果 bodyCache 的大小超过了 maxFileSize，进行上传，并重置 bodyCache.
 
-                var writeBodyCount = 0;
                 if (lastContentSize >= maxFileSize ) {
 
                     var sourceDir = './sources/'
@@ -159,7 +159,7 @@ async function etlExecute(parseline, prefix, times) {
 
                     bodyCache = '';
                     lastContentSize = 0;
-                    writeBodyCount += 1;
+                    writeBodyCount = writeBodyCount + 1;
 
                     console.log("---------------------")
                     console.log("New body write success!!!");
@@ -190,6 +190,8 @@ async function etlExecute(parseline, prefix, times) {
                         let zipResult = await gzipFinished;
                         console.log(zipResult)
                         console.log('new zip file', outFile);
+
+                        writeBodyCount = 0;
 
                         // inFile.pipe(gzip).pipe(outFile).on('finish', function () {
                         //
