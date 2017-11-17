@@ -13,7 +13,7 @@ const etls = {
 }
 
 const bucket = 'com.yodamob.adserver.track';
-const maxFileSize = 500 * 1024 * 1024;
+const maxFileSize = 200 * 1024 * 1024;
 
 var bodyCache = "";
 
@@ -134,6 +134,8 @@ async function etlExecute(parseline, prefix, times) {
 
                 // 将文件信息整合到 bodyCache 中
                 let newBody = buildBody(items);
+
+
                 bodyCache += newBody;
                 lastContentSize += Buffer.from(newBody).length;
 
@@ -143,41 +145,56 @@ async function etlExecute(parseline, prefix, times) {
                     // var gzip = zlib.createGZip();
                     // var out = fs.createWriteStream('./111.gz');
 
+                    var baseFilePath = './gzip/'
+                    var filePath = baseFilePath + Math.random().toString(36).substr(2)
                     // 存入本地
-                    let result = await fs.writeFile('./waitingGzip', bodyCache).promise();
+                    let result = await fs.writeFile(filePath, bodyCache).promise();
 
                     console.log("数据写入成功！");
                     console.log("--------我是分割线-------------")
                     console.log("读取写入的数据！");
 
+                    let dirInfo = fs.readdirSync(baseFilePath);
 
-                    var gzip = zlib.createGzip();
-                    var inFile = fs.createReadStream('./waitingGzip');
-                    var outFilePath = './' + Math.random().toString(36).substr(2) + '.gz';
-                    var outFile = fs.createWriteStream(outFilePath);
+                    console.log('dirInfo', dirInfo);
 
-                    inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
-                        console.log('done compressing...');
+                    if (dirInfo.files.length >= 5) {
 
-                        // 读取压缩完成的文件
-                        let resultGzipFile = fs.readFileSync(outFilePath);
-                        console.log('resultGzipFile,', resultGzipFile);
+                        console.log('base file length is ', dirInfo.files.length);
+                        console.log('begin make zip and update...')
 
-                        let params_putObject = {
-                            Bucket: bucket,
-                            Key: bodyPath,
-                            Body: resultGzipFile,
-                        };
+                        var gzip = zlib.createGzip();
+                        var inFile = fs.createReadStream(baseFilePath);
+                        var outFilePath = './' + Math.random().toString(36).substr(2) + '.gz';
+                        var outFile = fs.createWriteStream(outFilePath);
 
-                        let rs = await s3.putObject(params_putObject).promise();
+                        inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
 
-                        // 重置 bodyCache .
-                        let newFileInfo = generateNewLastFileInfo(prefix, time)
-                        lastContentSize = newFileInfo.lastContentSize;
-                        bodyPath = newFileInfo.bodyPath;
-                    });
+                            console.log('done compressing...');
 
-                    console.log('bodyCache size >= Max, is beginning upload... ', lastContentSize)
+                            // 读取压缩完成的文件
+                            let resultGzipFile = fs.readFileSync(outFilePath);
+                            console.log('resultGzipFile,', resultGzipFile);
+
+                            let params_putObject = {
+                                Bucket: bucket,
+                                Key: bodyPath,
+                                Body: resultGzipFile,
+                            };
+
+                            let rs = await s3.putObject(params_putObject).promise();
+
+                            // 重置 bodyCache .
+                            let newFileInfo = generateNewLastFileInfo(prefix, time)
+                            lastContentSize = newFileInfo.lastContentSize;
+                            bodyPath = newFileInfo.bodyPath;
+
+
+                        });
+
+                    }
+
+                    console.log('bodyCache size >= Max, is save... ', lastContentSize)
 
                     // 将 bodyCache 写入 s3 .
                     // await putBodyCacheToS3(bodyPath)
