@@ -13,7 +13,7 @@ const etls = {
 }
 
 const bucket = 'com.yodamob.adserver.track';
-const maxFileSize = 100 * 1024 * 1024;
+const maxFileSize = 500 * 1024 * 1024;
 
 var bodyCache = "";
 
@@ -143,40 +143,45 @@ async function etlExecute(parseline, prefix, times) {
                     // var gzip = zlib.createGZip();
                     // var out = fs.createWriteStream('./111.gz');
 
-                    let result = await fs.writeFile('./inputtest', bodyCache).promise();
+                    // 存入本地
+                    let result = await fs.writeFile('./waitingGzip', bodyCache).promise();
 
-                    console.log(result);
                     console.log("数据写入成功！");
                     console.log("--------我是分割线-------------")
                     console.log("读取写入的数据！");
 
+
                     var gzip = zlib.createGzip();
-                    var inFile = fs.createReadStream('./inputtest');
-                    var outFile = fs.createWriteStream('./test.gz');
+                    var inFile = fs.createReadStream('./waitingGzip');
+                    var outFilePath = './' + Math.random().toString(36).substr(2) + '.gz';
+                    var outFile = fs.createWriteStream(outFilePath);
 
-                    inFile.pipe(gzip).pipe(outFile);
+                    inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
+                        console.log('done compressing...');
 
+                        // 读取压缩完成的文件
+                        let resultGzipFile = fs.readFileSync(outFilePath);
+                        console.log('resultGzipFile,', resultGzipFile);
 
-                    let gzfile = await fs.readFile('./test.gz', null).promise();
+                        let params_putObject = {
+                            Bucket: bucket,
+                            Key: bodyPath,
+                            Body: resultGzipFile,
+                        };
 
-                    console.log('gzfile', gzfile);
-                    let params_putObject = {
-                        Bucket: bucket,
-                        Key: bodyPath,
-                        Body: gzfile,
-                    };
+                        let rs = await s3.putObject(params_putObject).promise();
 
-                    let rs = await s3.putObject(params_putObject).promise();
+                        // 重置 bodyCache .
+                        let newFileInfo = generateNewLastFileInfo(prefix, time)
+                        lastContentSize = newFileInfo.lastContentSize;
+                        bodyPath = newFileInfo.bodyPath;
+                    });
 
                     console.log('bodyCache size >= Max, is beginning upload... ', lastContentSize)
 
                     // 将 bodyCache 写入 s3 .
-                    await putBodyCacheToS3(bodyPath)
+                    // await putBodyCacheToS3(bodyPath)
 
-                    // 重置 bodyCache .
-                    let newFileInfo = generateNewLastFileInfo(prefix, time)
-                    lastContentSize = newFileInfo.lastContentSize;
-                    bodyPath = newFileInfo.bodyPath;
 
                 } else {
                     console.log('bodyCache size < Max ', lastContentSize);
@@ -187,7 +192,7 @@ async function etlExecute(parseline, prefix, times) {
 
     // 将剩余不足 100 mb 的数据写入 s3
     if (bodyCache.length != 0 && lastContentSize != 0) {
-        await putBodyCacheToS3(bodyPath);
+        // await putBodyCacheToS3(bodyPath);
     }
 }
 
