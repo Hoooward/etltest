@@ -207,13 +207,11 @@ async function etlExecute(parseline, prefix, times) {
                         let rs = await s3.putObject(params_putObject).promise();
                         console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
 
-                        let sourceResult = fs.readdirSync(sourceDir);
-                        for (var item of sourceDir) {
+                        for (var item of fs.readdirSync(sourceDir)) {
                             fs.unlinkSync(sourceDir + item);
                         }
 
-                        let gzipResult = fs.readdirSync(outDir);
-                        for (var item of outDir) {
+                        for (var item of  fs.readdirSync(outDir)) {
                             fs.unlinkSync(outDir + item)
                         }
 
