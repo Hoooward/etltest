@@ -194,7 +194,7 @@ async function etlExecute(parseline, prefix, times) {
                         let params_putObject = {
                             Bucket: bucket,
                             Key: bodyPath + ".gz",
-                            Body: outFile,
+                            Body: resultGzipFile,
                         };
 
                         let rs = await s3.putObject(params_putObject).promise();
