@@ -148,23 +148,13 @@ async function etlExecute(parseline, prefix, times) {
                     let exists = fs.existsSync(sourceDir)
                     if (!exists) {
                         fs.mkdirSync(sourceDir);
+
                     } else {
 
                         if (writeBodyCount == 0) {
-
-                            for (var item of fs.readdirSync(sourceDir)) {
-                                if (item) {
-                                    fs.unlinkSync(sourceDir + item);
-                                }
-                            }
-                            for (var item of  fs.readdirSync(outDir)) {
-                                if (item) {
-                                    fs.unlinkSync(outDir + item)
-                                }
-                            }
+                            await deleteOldDataFrom(sourceDir)
                         }
                     }
-
 
                     let writeError = fs.appendFileSync(sourceFilePath, bodyCache);
 
@@ -205,18 +195,19 @@ async function etlExecute(parseline, prefix, times) {
 
                         writeBodyCount = 0;
 
-                        let resultGzipFile = fs.readFileSync(outFilePath);
-                        console.log('resultGzipFile,', resultGzipFile);
+                        // let resultGzipFile = fs.readFileSync(outFilePath);
+                        // console.log('resultGzipFile,', resultGzipFile);
 
                         let params_putObject = {
                             Bucket: bucket,
                             Key: bodyPath,
-                            Body: resultGzipFile,
+                            Body: outFile,
                         };
 
                         let rs = await s3.putObject(params_putObject).promise();
                         console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
 
+                        await deleteOldDataFrom(outDir)
 
                         // 重置 bodyCache .
                         let newFileInfo = generateNewLastFileInfo(prefix, time)
@@ -236,6 +227,18 @@ async function etlExecute(parseline, prefix, times) {
     if (bodyCache.length != 0 && lastContentSize != 0) {
         // await putBodyCacheToS3(bodyPath);
     }
+}
+
+async function deleteOldDataFrom(path) {
+
+    let files = fs.readdirSync(path)
+    if (files && files.length > 0) {
+        for (var file of files) {
+            fs.unlinkSync(path + file);
+            console.log('Delete file path =>', path + file);
+        }
+    }
+
 }
 
 async function putBodyCacheToS3(bodyPath) {
