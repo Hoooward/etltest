@@ -145,7 +145,7 @@ async function etlExecute(parseline, prefix, times) {
 
                 if (lastContentSize >= maxFileSize ) {
 
-                    await prepareGenerateBodyFile()
+                    await prepareGenerateBodyFile(writeBodyCount)
 
                     var sourceFilePath = sourceDir + 'baseData'
                     let writeError = fs.appendFileSync(sourceFilePath, bodyCache);
@@ -222,11 +222,13 @@ async function etlExecute(parseline, prefix, times) {
     }
 }
 
-async function prepareGenerateBodyFile() {
+async function prepareGenerateBodyFile(writeBodyCount) {
 
     let sourceExists = fs.existsSync(sourceDir)
     if (sourceExists) {
-        await deleteOldDataFrom(sourceDir)
+        if (writeBodyCount == 0) {
+            await deleteOldDataFrom(sourceDir)
+        }
     } else {
         fs.mkdirSync(sourceDir);
         console.log('Created dir =>', sourceDir)
