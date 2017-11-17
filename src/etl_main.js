@@ -188,17 +188,17 @@ async function etlExecute(parseline, prefix, times) {
 
                             console.log('done compressing...');
 
-                            let resultGzipFile = fs.readFileSync(outFilePath);
-                            console.log('resultGzipFile,', resultGzipFile);
+                            // let resultGzipFile = fs.readFileSync(outFilePath);
+                            // console.log('resultGzipFile,', resultGzipFile);
 
-                            let params_putObject = {
-                                Bucket: bucket,
-                                Key: bodyPath,
-                                Body: resultGzipFile,
-                            };
-
-                            let rs = await s3.putObject(params_putObject).promise();
-                            console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
+                            // let params_putObject = {
+                            //     Bucket: bucket,
+                            //     Key: bodyPath,
+                            //     Body: resultGzipFile,
+                            // };
+                            //
+                            // let rs = await s3.putObject(params_putObject).promise();
+                            // console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
 
                         });
                     }
