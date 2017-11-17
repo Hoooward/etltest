@@ -13,9 +13,12 @@ const etls = {
 }
 
 const bucket = 'com.yodamob.adserver.track';
-const maxFileSize = 20 * 1024 * 1024;
 
+
+const maxFileSize = 20 * 1024 * 1024;
 var bodyCache = "";
+const sourceDir = './sources/';
+const gzipDir = './gzip/';
 
 
 var etlFn = parseline => (data, batchTime) => {
@@ -142,20 +145,9 @@ async function etlExecute(parseline, prefix, times) {
 
                 if (lastContentSize >= maxFileSize ) {
 
-                    var sourceDir = './sources/'
+                    await prepareGenerateBodyFile()
+
                     var sourceFilePath = sourceDir + 'baseData'
-
-                    let exists = fs.existsSync(sourceDir)
-                    if (!exists) {
-                        fs.mkdirSync(sourceDir);
-
-                    } else {
-
-                        if (writeBodyCount == 0) {
-                            await deleteOldDataFrom(sourceDir)
-                        }
-                    }
-
                     let writeError = fs.appendFileSync(sourceFilePath, bodyCache);
 
                     if (writeError) {
@@ -176,11 +168,12 @@ async function etlExecute(parseline, prefix, times) {
                         console.log('Begin make zip and update...')
                         console.log("---------------------")
 
+                        await prepareMakeCompress()
+
                         // 将所有文件写成一个文件
                         var gzip = zlib.createGzip();
                         var inFile = fs.createReadStream(sourceFilePath);
-                        var outDir = './gzip/';
-                        var outFilePath = outDir + Math.random().toString(36).substr(2) + '.gz';
+                        var outFilePath = gzipDir + 'zipData.gz';
                         var outFile = fs.createWriteStream(outFilePath);
 
                         var gzipFinished = new Promise(function (resolve, reject) {
@@ -200,7 +193,7 @@ async function etlExecute(parseline, prefix, times) {
 
                         let params_putObject = {
                             Bucket: bucket,
-                            Key: bodyPath,
+                            Key: bodyPath + ".gz",
                             Body: outFile,
                         };
 
@@ -226,6 +219,28 @@ async function etlExecute(parseline, prefix, times) {
     // 将剩余不足 100 mb 的数据写入 s3
     if (bodyCache.length != 0 && lastContentSize != 0) {
         // await putBodyCacheToS3(bodyPath);
+    }
+}
+
+async function prepareGenerateBodyFile() {
+
+    let sourceExists = fs.existsSync(sourceDir)
+    if (sourceExists) {
+        await deleteOldDataFrom(sourceDir)
+    } else {
+        fs.mkdirSync(sourceDir);
+        console.log('Created dir =>', sourceDir)
+    }
+}
+
+async function prepareMakeCompress() {
+
+    let gzipExists = fs.existsSync(gzipDir)
+    if (gzipExists) {
+        await deleteOldDataFrom(gzipDir)
+    } else {
+        fs.mkdirSync(gzipDir)
+        console.log('Created dir =>', gzipDir)
     }
 }
 
