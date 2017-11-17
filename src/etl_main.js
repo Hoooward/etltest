@@ -170,12 +170,6 @@ async function etlExecute(parseline, prefix, times) {
                         console.log('Begin make zip and update...')
                         console.log("---------------------")
 
-
-                        let sourceResult = fs.readdirSync(sourceDir);
-                        if (sourceResult.length != 0) {
-                            fs.unlinkSync(sourceFilePath);
-                        }
-
                         // 将所有文件写成一个文件
                         var gzip = zlib.createGzip();
                         var inFile = fs.createReadStream(sourceFilePath);
