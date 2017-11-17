@@ -151,11 +151,16 @@ async function etlExecute(parseline, prefix, times) {
                     } else {
 
                         if (writeBodyCount == 0) {
+
                             for (var item of fs.readdirSync(sourceDir)) {
-                                fs.unlinkSync(sourceDir + item);
+                                if (item) {
+                                    fs.unlinkSync(sourceDir + item);
+                                }
                             }
                             for (var item of  fs.readdirSync(outDir)) {
-                                fs.unlinkSync(outDir + item)
+                                if (item) {
+                                    fs.unlinkSync(outDir + item)
+                                }
                             }
                         }
                     }
