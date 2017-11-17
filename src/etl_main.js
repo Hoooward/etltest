@@ -165,7 +165,7 @@ async function etlExecute(parseline, prefix, times) {
 
                     console.log('dirInfo', dirInfo);
 
-                    if (dirInfo.files.length >= 5) {
+                    if (dirInfo.length >= 5) {
 
                         console.log('base file length is ', dirInfo.files.length);
                         console.log('begin make zip and update...')
