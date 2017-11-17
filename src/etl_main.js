@@ -176,26 +176,31 @@ async function etlExecute(parseline, prefix, times) {
                         var outFile = fs.createWriteStream(outFilePath);
 
 
-                        let zipResult = await inFile.pipe(gzip).pipe(outFile).promise()
-                        console.log('zipResult', zipResult);
-
-                        // inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
+                        // var finished = new Promise(function (resolve, reject) {
                         //
-                        //     console.log('done compressing...');
+                        //     inFile.pipe(gzip).pipe(outFile).on('finish', ()=>resolve(
                         //
+                        //     ))
                         //
-                        // });
-                        let resultGzipFile = fs.readFileSync(outFilePath);
-                        console.log('resultGzipFile,', resultGzipFile);
+                        // })
 
-                        let params_putObject = {
-                            Bucket: bucket,
-                            Key: bodyPath,
-                            Body: resultGzipFile,
-                        };
+                        inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
 
-                        let rs = await s3.putObject(params_putObject).promise();
-                        console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
+                            console.log('done compressing...');
+
+                            let resultGzipFile = fs.readFileSync(outFilePath);
+                            console.log('resultGzipFile,', resultGzipFile);
+
+                            let params_putObject = {
+                                Bucket: bucket,
+                                Key: bodyPath,
+                                Body: resultGzipFile,
+                            };
+
+                            let rs = await s3.putObject(params_putObject).promise();
+                            console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
+
+                        });
                     }
                     // 重置 bodyCache .
                     let newFileInfo = generateNewLastFileInfo(prefix, time)
