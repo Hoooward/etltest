@@ -176,7 +176,7 @@ async function etlExecute(parseline, prefix, times) {
                         var outFile = fs.createWriteStream(outFilePath);
 
 
-                        let zipResult = await inFile.pipe(gzip).pipe(outFile)
+                        let zipResult = await inFile.pipe(gzip).pipe(outFile).promise()
                         console.log('zipResult', zipResult);
 
                         // inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
