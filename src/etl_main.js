@@ -147,7 +147,10 @@ async function etlExecute(parseline, prefix, times) {
 
                     var baseFilePath = './gzip/'
 
-                    fs.mkdirSync(baseFilePath);
+                    let exists = fs.existsSync(baseFilePath)
+                    if (!exists) {
+                        fs.mkdirSync(baseFilePath);
+                    }
 
                     var filePath = baseFilePath + Math.random().toString(36).substr(2)
                     // 存入本地
@@ -188,15 +191,12 @@ async function etlExecute(parseline, prefix, times) {
 
                             let rs = await s3.putObject(params_putObject).promise();
 
-                            // 重置 bodyCache .
-                            let newFileInfo = generateNewLastFileInfo(prefix, time)
-                            lastContentSize = newFileInfo.lastContentSize;
-                            bodyPath = newFileInfo.bodyPath;
-
-
                         });
-
                     }
+                    // 重置 bodyCache .
+                    let newFileInfo = generateNewLastFileInfo(prefix, time)
+                    lastContentSize = newFileInfo.lastContentSize;
+                    bodyPath = newFileInfo.bodyPath;
 
                     console.log('bodyCache size >= Max, is save... ', lastContentSize)
 
