@@ -148,7 +148,8 @@ async function etlExecute(parseline, prefix, times) {
                     var baseFilePath = './gzip/'
                     var filePath = baseFilePath + Math.random().toString(36).substr(2)
                     // 存入本地
-                    let result = await fs.writeFile(filePath, bodyCache).promise();
+                    // let result = await fs.writeFile(filePath, bodyCache).promise();
+                    let result = fs.writeFileSync(filePath, bodyCache)
 
                     console.log("数据写入成功！");
                     console.log("--------我是分割线-------------")
