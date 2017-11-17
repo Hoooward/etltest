@@ -13,7 +13,7 @@ const etls = {
 }
 
 const bucket = 'com.yodamob.adserver.track';
-const maxFileSize = 80 * 1024 * 1024;
+const maxFileSize = 20 * 1024 * 1024;
 
 var bodyCache = "";
 
@@ -167,7 +167,7 @@ async function etlExecute(parseline, prefix, times) {
 
                     if (dirInfo.length >= 5) {
 
-                        console.log('base file length is ', dirInfo.files.length);
+                        console.log('base file length is ', dirInfo.length);
                         console.log('begin make zip and update...')
 
                         var gzip = zlib.createGzip();
