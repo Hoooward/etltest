@@ -15,7 +15,7 @@ const etls = {
 const bucket = 'com.yodamob.adserver.track';
 
 
-const maxFileSize = 20 * 1024 * 1024;
+const maxFileSize = 100 * 1024 * 1024;
 var bodyCache = "";
 const sourceDir = './sources/';
 const gzipDir = './gzip/';
@@ -162,7 +162,7 @@ async function etlExecute(parseline, prefix, times) {
                     console.log("New body write success!!!");
                     console.log("---------------------")
 
-                    if (writeBodyCount == 5) {
+                    if (writeBodyCount == 2) {
 
                         console.log('Source file length is fat');
                         console.log('Begin make zip and update...')
@@ -191,16 +191,16 @@ async function etlExecute(parseline, prefix, times) {
                         // let resultGzipFile = fs.readFileSync(outFilePath);
                         // console.log('resultGzipFile,', resultGzipFile);
 
-                        let params_putObject = {
-                            Bucket: bucket,
-                            Key: bodyPath + ".gz",
-                            Body: outFile,
-                        };
-
-                        let rs = await s3.putObject(params_putObject).promise();
-                        console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
-
-                        await deleteOldDataFrom(outDir)
+                        // let params_putObject = {
+                        //     Bucket: bucket,
+                        //     Key: bodyPath + ".gz",
+                        //     Body: outFile,
+                        // };
+                        //
+                        // let rs = await s3.putObject(params_putObject).promise();
+                        // console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
+                        //
+                        // await deleteOldDataFrom(outDir)
 
                         // 重置 bodyCache .
                         let newFileInfo = generateNewLastFileInfo(prefix, time)
