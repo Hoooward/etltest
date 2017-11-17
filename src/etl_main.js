@@ -184,7 +184,7 @@ async function etlExecute(parseline, prefix, times) {
                         //
                         // })
 
-                        inFile.pipe(gzip).pipe(outFile).on('finish', async function () {
+                        inFile.pipe(gzip).pipe(outFile).on('finish', function () {
 
                             console.log('done compressing...');
 
