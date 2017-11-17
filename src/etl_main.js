@@ -146,6 +146,9 @@ async function etlExecute(parseline, prefix, times) {
                     // var out = fs.createWriteStream('./111.gz');
 
                     var baseFilePath = './gzip/'
+
+                    fs.mkdirSync(baseFilePath);
+
                     var filePath = baseFilePath + Math.random().toString(36).substr(2)
                     // 存入本地
                     // let result = await fs.writeFile(filePath, bodyCache).promise();
