@@ -135,79 +135,87 @@ async function etlExecute(parseline, prefix, times) {
                 // 将文件信息整合到 bodyCache 中
                 let newBody = buildBody(items);
 
-
                 bodyCache += newBody;
                 lastContentSize += Buffer.from(newBody).length;
 
                 // 如果 bodyCache 的大小超过了 maxFileSize，进行上传，并重置 bodyCache.
+
+                var writeBodyCount = 0;
                 if (lastContentSize >= maxFileSize ) {
 
-                    // var gzip = zlib.createGZip();
-                    // var out = fs.createWriteStream('./111.gz');
-
-                    var baseFilePath = './gzip/'
-
-                    let exists = fs.existsSync(baseFilePath)
+                    var sourceDir = './sources/'
+                    var sourceFilePath = sourceDir + 'baseData'
+                    let exists = fs.existsSync(sourceDir)
                     if (!exists) {
-                        fs.mkdirSync(baseFilePath);
+                        fs.mkdirSync(sourceDir);
                     }
 
-                    var filePath = baseFilePath + Math.random().toString(36).substr(2)
-                    // 存入本地
-                    // let result = await fs.writeFile(filePath, bodyCache).promise();
-                    let result = fs.writeFileSync(filePath, bodyCache)
+                    // var sourceFilePath = baseFilePath + Math.random().toString(36).substr(2)
+                    let writeError = fs.appendFileSync(sourceFilePath, bodyCache);
 
-                    console.log("数据写入成功！");
-                    console.log("--------我是分割线-------------")
-                    console.log("读取写入的数据！");
+                    if (writeError) {
+                        throw  writeError;
+                    }
 
-                    let dirInfo = fs.readdirSync(baseFilePath);
+                    bodyCache = '';
+                    lastContentSize = 0;
+                    writeBodyCount += 1;
 
-                    console.log('dirInfo', dirInfo);
+                    console.log("---------------------")
+                    console.log("New body write success!!!");
+                    console.log("---------------------")
 
-                    if (dirInfo.length >= 5) {
+                    if (writeBodyCount == 5) {
 
-                        console.log('base file length is ', dirInfo.length);
-                        console.log('begin make zip and update...')
+                        console.log('Source file length is fat');
+                        console.log('Begin make zip and update...')
+                        console.log("---------------------")
 
+                        // 将所有文件写成一个文件
                         var gzip = zlib.createGzip();
-                        var inFile = fs.createReadStream(baseFilePath);
+                        var inFile = fs.createReadStream(sourceFilePath);
                         var outFilePath = './' + Math.random().toString(36).substr(2) + '.gz';
                         var outFile = fs.createWriteStream(outFilePath);
 
 
-                        // var finished = new Promise(function (resolve, reject) {
+                        var gzipFinished = new Promise(function (resolve, reject) {
+                            inFile.pipe(gzip).pipe(outFile).on('finish', ()=>{
+                                resolve('done compressing...');
+                            })
+                        })
+
+
+
+
+                        let zipResult = await gzipFinished;
+                        console.log(zipResult)
+                        console.log('new zip file', outFile);
+
+                        // inFile.pipe(gzip).pipe(outFile).on('finish', function () {
                         //
-                        //     inFile.pipe(gzip).pipe(outFile).on('finish', ()=>resolve(
+                        //     console.log('done compressing...');
                         //
-                        //     ))
+                        //     let resultGzipFile = fs.readFileSync(outFilePath);
+                        //     console.log('resultGzipFile,', resultGzipFile);
                         //
-                        // })
-
-                        inFile.pipe(gzip).pipe(outFile).on('finish', function () {
-
-                            console.log('done compressing...');
-
-                            // let resultGzipFile = fs.readFileSync(outFilePath);
-                            // console.log('resultGzipFile,', resultGzipFile);
-
-                            // let params_putObject = {
-                            //     Bucket: bucket,
-                            //     Key: bodyPath,
-                            //     Body: resultGzipFile,
-                            // };
-                            //
-                            // let rs = await s3.putObject(params_putObject).promise();
-                            // console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
-
-                        });
+                        //     let params_putObject = {
+                        //         Bucket: bucket,
+                        //         Key: bodyPath,
+                        //         Body: resultGzipFile,
+                        //     };
+                        //
+                        //     let rs = await s3.putObject(params_putObject).promise();
+                        //     console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
+                        //
+                        //
+                        // });
                     }
+                    console.log('bodyCache size >= Max, is save... ', lastContentSize)
                     // 重置 bodyCache .
                     let newFileInfo = generateNewLastFileInfo(prefix, time)
                     lastContentSize = newFileInfo.lastContentSize;
                     bodyPath = newFileInfo.bodyPath;
 
-                    console.log('bodyCache size >= Max, is save... ', lastContentSize)
 
                     // 将 bodyCache 写入 s3 .
                     // await putBodyCacheToS3(bodyPath)
