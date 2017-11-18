@@ -134,6 +134,9 @@ async function etlExecute(parseline, prefix, times) {
                 lastContentSize = newFileInfo.lastContentSize;
                 bodyPath = newFileInfo.bodyPath;
 
+                await prepareGenerateBodyFile()
+                await prepareMakeCompress();
+
                 console.log('Create new push path => ', bodyPath);
                 needCreateNewS3Path = false;
             }
@@ -148,9 +151,6 @@ async function etlExecute(parseline, prefix, times) {
 
                 let newBody = buildBody(items);
 
-                await prepareGenerateBodyFile(needCreateNewS3Path)
-
-                console.log("New body write success. new file size => ", lastContentSize);
 
                 //将新数据写入本地
                 var sourceFilePath = sourceDir + 'baseData'
@@ -161,7 +161,8 @@ async function etlExecute(parseline, prefix, times) {
                 }
 
                 lastContentSize += Buffer.from(newBody).length;
-                
+                console.log("New body write success. new file size => ", lastContentSize);
+
                 if (lastContentSize >= maxFileSize) {
 
                     console.log('Body file length is fat');
@@ -182,8 +183,6 @@ async function etlExecute(parseline, prefix, times) {
 }
 
 async function pushBodyCacheFileToS3(bodyPath) {
-
-    await prepareMakeCompress();
 
     // 将所有文件写成一个文件
     var sourceFilePath = sourceDir + 'baseData'
@@ -214,18 +213,17 @@ async function pushBodyCacheFileToS3(bodyPath) {
     console.log('Beginning push etl gz file to s3...')
     console.log("----------------------------------------------------------")
     let rs = await s3.putObject(params_putObject).promise();
+
     console.log("----------------------------------------------------------")
     console.log(`ETL push to S3 success. filename ${bodyPath}, rs: `, rs);
     console.log("----------------------------------------------------------")
 }
 
-async function prepareGenerateBodyFile(needClearOldBodyFile) {
+async function prepareGenerateBodyFile() {
 
     let sourceExists = fs.existsSync(sourceDir)
     if (sourceExists) {
-        if (needClearOldBodyFile) {
-            await deleteOldDataFrom(sourceDir)
-        }
+        await deleteOldDataFrom(sourceDir)
     } else {
         fs.mkdirSync(sourceDir);
         console.log('Created dir =>', sourceDir)
