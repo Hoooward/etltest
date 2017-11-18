@@ -143,7 +143,7 @@ async function etlExecute(parseline, prefix, times) {
             };
 
             if (needCreateNewS3Path) {
-                let newFileInfo = generateCompressS3FileInfo(prefix, times[0]);
+                let newFileInfo = generateCompressS3FileInfo(prefix, time);
                 lastContentSize = newFileInfo.lastContentSize;
                 bodyPath = newFileInfo.bodyPath;
 
