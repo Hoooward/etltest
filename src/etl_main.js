@@ -63,8 +63,21 @@ var buildEtlPath = function (prefix, time) {
 var generateCompressS3FileInfo = function (prefix, batchTime) {
     bodyCache = "";
     let lastContentSize = 0;
-    var etlTargetFilePath = buildEtlPath(prefix, batchTime) + `${Math.random().toString(36).substr(2)}` + ".gz";
-    return {"bodyPath" : etlTargetFilePath,  "body": bodyCache, "lastContentSize": lastContentSize};
+    var etlTargetFilePath = generateS3FilePath(prefix, batchTime);
+
+    return {
+        "bodyPath" : etlTargetFilePath,
+        "body": bodyCache,
+        "lastContentSize": lastContentSize
+    };
+}
+
+var generateS3FilePath = function (prefix, batchTime) {
+    var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
+    var name = beijingTime.format('YYYYMMDDHHmm');
+    var filename = name + "_" + `${Math.random().toString(36).substr(2)}` + ".gz";
+    var etlTargetFilePath = buildEtlPath(prefix, batchTime);
+    return etlTargetFilePath +  filename
 }
 
 var buildPath = function (time) {
