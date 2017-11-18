@@ -73,7 +73,7 @@ var generateCompressS3FileInfo = function (prefix, batchTime) {
 }
 
 var generateS3FilePath = function (prefix, batchTime) {
-    var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
+    var beijingTime = moment.tz(batchTime, 'Asia/Shanghai').tz('Asia/Shanghai');
     var name = beijingTime.format('YYYYMMDDHHmm');
     var filename = name + "_" + `${Math.random().toString(36).substr(2)}` + ".gz";
     var etlTargetFilePath = buildEtlPath(prefix, batchTime);
