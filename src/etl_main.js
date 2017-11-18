@@ -60,10 +60,10 @@ var buildEtlPath = function (prefix, time) {
     return `etl_test${prefix}/${path}/`
 }
 
-var generateNewLastFileInfo = function (prefix, batchTime) {
+var generateCompressS3FileInfo = function (prefix, batchTime) {
     bodyCache = "";
     let lastContentSize = 0;
-    var etlTargetFilePath = buildEtlPath(prefix, batchTime) + `${Math.random().toString(36).substr(2)}`;
+    var etlTargetFilePath = buildEtlPath(prefix, batchTime) + `${Math.random().toString(36).substr(2)}` + ".gz";
     return {"bodyPath" : etlTargetFilePath,  "body": bodyCache, "lastContentSize": lastContentSize};
 }
 
@@ -86,21 +86,24 @@ var buildBody = function (items) {
 
 async function etlExecute(parseline, prefix, times) {
 
-    // 获取 s3 中与当前时间关联的最后一个文件的信息
-    let oneBatchTime = times[0];
-    let lastBodyInfo = await getLastFileInfo(prefix, oneBatchTime);
-    var bodyPath = lastBodyInfo.bodyPath;
-    var lastContentSize = lastBodyInfo.lastContentSize;
+    // 从 s3 中获取与当前时间关联的最后一个文件
+    // let oneBatchTime = times[0];
+    // let lastBodyInfo = await getLastFileInfo(prefix, oneBatchTime);
+    // var bodyPath = lastBodyInfo.bodyPath;
 
-    var writeBodyCount = 0;
+    var lastContentSize = 0;
+    var bodyPath = "";
+
+    var needCreateNewS3Path = true
+
     for (var time of times) {
 
         console.log('\n\n\n');
         console.log('etlBatchExecute start, batchTime : ', time);
 
         // 生成原始文件信息路径
-        var path = buildPath(time);
-        var trackPath = `${prefix}/${path}/`;
+        var path = buildPath(time); // : 20071113/0010
+        var trackPath = `${prefix}/${path}/`; // : etl_testClick/20071113/
         var etl = etlFn(parseline);
 
         var params_listObject = {
@@ -109,17 +112,16 @@ async function etlExecute(parseline, prefix, times) {
         };
 
         try {
-            // 获取当前时间片原始数据
-            var objectList = await s3.listObjects(params_listObject).promise();
-
+            // 获取当前时间的原始数据列表
+            var originalDataList = await s3.listObjects(params_listObject).promise();
         } catch (err) {
             console.error("fetch s3 file error : ", err);
             throw err;
         }
 
-        console.log("Object File Count from s3 : ", objectList.Contents.length);
-        // 遍历当前时间切换的原始数据， 添加到 bodyCache 中.
-        for (let object of objectList.Contents) {
+        console.log("Current time dir from s3 has Object : ", originalDataList.Contents.length);
+
+        for (let object of originalDataList.Contents) {
 
             let key = object.Key;
             let params_getObject = {
@@ -127,106 +129,97 @@ async function etlExecute(parseline, prefix, times) {
                 Key: key,
             };
 
-            console.log('Get Object And ETL : ', params_getObject);
+            if (needCreateNewS3Path) {
+                let newFileInfo = generateCompressS3FileInfo(prefix, times[0]);
+                lastContentSize = newFileInfo.lastContentSize;
+                bodyPath = newFileInfo.bodyPath;
+
+                console.log('Create new push path => ', bodyPath);
+                needCreateNewS3Path = false;
+            }
+
+            console.log('Get current time dir objects And ETL : ', params_getObject);
             let traceData = await s3.getObject(params_getObject).promise();
 
             let items = etl(traceData, time, parseline);
-            console.log('ETL Item Count', items.length);
+            console.log('Fetch etl item count', items.length);
 
             if (items && items.length > 0) {
 
-                // 将文件信息整合到 bodyCache 中
                 let newBody = buildBody(items);
 
-                bodyCache += newBody;
+                var needClearOldBodyFile = lastContentSize >= maxFileSize
+                await prepareGenerateBodyFile(needClearOldBodyFile)
+
+                //将新数据写入本地
+                var sourceFilePath = sourceDir + 'baseData'
+                let writeError = fs.appendFileSync(sourceFilePath, newBody);
+
+                if (writeError) {
+                    throw  writeError;
+                }
+
                 lastContentSize += Buffer.from(newBody).length;
+                console.log("New body write success. new file size => ", lastContentSize);
 
-                // 如果 bodyCache 的大小超过了 maxFileSize，进行上传，并重置 bodyCache.
+                if (lastContentSize >= maxFileSize) {
 
-                if (lastContentSize >= maxFileSize ) {
-
-                    await prepareGenerateBodyFile(writeBodyCount)
-
-                    var sourceFilePath = sourceDir + 'baseData'
-                    let writeError = fs.appendFileSync(sourceFilePath, bodyCache);
-
-                    if (writeError) {
-                        throw  writeError;
-                    }
-
-                    bodyCache = '';
-                    lastContentSize = 0;
-                    writeBodyCount = writeBodyCount + 1;
-
-                    console.log("---------------------")
-                    console.log("New body write success!!!");
+                    console.log('Body file length is fat');
+                    console.log('Begin make zip and update...')
                     console.log("---------------------")
 
-                    if (writeBodyCount == 2) {
+                    await pushBodyCacheFileToS3(bodyPath)
 
-                        console.log('Source file length is fat');
-                        console.log('Begin make zip and update...')
-                        console.log("---------------------")
-
-                        await prepareMakeCompress()
-
-                        // 将所有文件写成一个文件
-                        var gzip = zlib.createGzip();
-                        var inFile = fs.createReadStream(sourceFilePath);
-                        var outFilePath = gzipDir + 'zipData.gz';
-                        var outFile = fs.createWriteStream(outFilePath);
-
-                        var gzipFinished = new Promise(function (resolve, reject) {
-                            inFile.pipe(gzip).pipe(outFile).on('finish', ()=>{
-                                resolve('done compressing...');
-                            })
-                        })
-
-                        let zipResult = await gzipFinished;
-                        console.log(zipResult)
-                        // console.log('new zip file', outFile);
-
-                        writeBodyCount = 0;
-
-                        let resultGzipFile = fs.readFileSync(outFilePath);
-                        console.log('resultGzipFile,', resultGzipFile);
-
-                        let params_putObject = {
-                            Bucket: bucket,
-                            Key: bodyPath + ".gz",
-                            Body: resultGzipFile,
-                        };
-
-                        let rs = await s3.putObject(params_putObject).promise();
-                        console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
-
-                        await deleteOldDataFrom(outDir)
-
-                        // 重置 bodyCache .
-                        let newFileInfo = generateNewLastFileInfo(prefix, time)
-                        lastContentSize = newFileInfo.lastContentSize;
-                        bodyPath = newFileInfo.bodyPath;
-                    }
-
-                } else {
-
-                    console.log('bodyCache size => ', lastContentSize);
+                    needCreateNewS3Path = true;
                 }
             }
         }
     }
 
-    // 将剩余不足 100 mb 的数据写入 s3
-    if (bodyCache.length != 0 && lastContentSize != 0) {
-        // await putBodyCacheToS3(bodyPath);
+    if (lastContentSize != 0) {
+        await pushBodyCacheFileToS3(bodyPath);
     }
 }
 
-async function prepareGenerateBodyFile(writeBodyCount) {
+async function pushBodyCacheFileToS3(bodyPath) {
+
+    await prepareMakeCompress();
+
+    // 将所有文件写成一个文件
+    var sourceFilePath = sourceDir + 'baseData'
+    var gzip = zlib.createGzip();
+    var inFile = fs.createReadStream(sourceFilePath);
+    var gzFilePath = gzipDir + 'zipData.gz';
+    var gzFile = fs.createWriteStream(gzFilePath);
+
+    var gzipFinished = new Promise(function (resolve, reject) {
+        inFile.pipe(gzip).pipe(gzFile).on('finish', () => {
+            resolve('Done compressing...');
+        })
+    })
+
+    let gzResult = await gzipFinished;
+    console.log('Compressing result', gzResult)
+
+    let resultGzipFile = fs.readFileSync(gzFilePath);
+    console.log('New compress file,', resultGzipFile);
+
+    let params_putObject = {
+        Bucket: bucket,
+        Key: bodyPath,
+        Body: resultGzipFile,
+    };
+
+    console.log('Beginning push etl gz file to s3...')
+    let rs = await s3.putObject(params_putObject).promise();
+    console.log(`ETL saved to S3 filename ${bodyPath}, rs: `, rs);
+}
+
+async function prepareGenerateBodyFile(needClearOldBodyFile) {
 
     let sourceExists = fs.existsSync(sourceDir)
     if (sourceExists) {
-        if (writeBodyCount == 0) {
+        if (needClearOldBodyFile) {
             await deleteOldDataFrom(sourceDir)
         }
     } else {
@@ -255,18 +248,6 @@ async function deleteOldDataFrom(path) {
             console.log('Delete file path =>', path + file);
         }
     }
-
-}
-
-async function putBodyCacheToS3(bodyPath) {
-    let params_putObject = {
-        Bucket: bucket,
-        Key: bodyPath,
-        Body: bodyCache,
-    };
-    let rs = await s3.putObject(params_putObject).promise();
-    console.log(`ETL Saved To S3 filename ${bodyPath}, rs: `, rs);
-    bodyCache = ""
 }
 
 async function getLastFileInfo(prefix, batchTime) {
@@ -283,23 +264,32 @@ async function getLastFileInfo(prefix, batchTime) {
 
     var lastContentSize = 0;
 
+    // 获取文件夹中所有内容
     let etlExitingObjects = await s3.listObjects(params_fetchDirInfo).promise();
     if (etlExitingObjects != null && etlExitingObjects.Contents.length != 0) {
 
+        // 排序
         let existingObjectContents = etlExitingObjects.Contents.sort(function (a, b) {
             return a.LastModified.getTime() - b.LastModified.getTime();
         });
+
         let lastContent = existingObjectContents[existingObjectContents.length - 1];
         let lastContentKey = lastContent.Key;
         let keyArray = lastContentKey.split('\/');
         lastContentSize = lastContent.Size;
 
-        if (lastContentSize < maxFileSize) {
+        if ((lastContentSize * 5) < maxFileSize) {
             let params_getLastObject = {
                 Bucket: bucket,
                 Key: lastContentKey,
             };
+
+            // 获取最后一个文件的内容
             let lastFile = await s3.getObject(params_getLastObject).promise();
+
+            // 最后一个应该是压缩好的格式
+            // TODO: - 需要解压缩
+
             let lastFileBody = lastFile.Body.toString();
 
             etlTargetFilePath += `${keyArray[keyArray.length - 1]}`;
@@ -308,11 +298,11 @@ async function getLastFileInfo(prefix, batchTime) {
             return {"bodyPath" : etlTargetFilePath,  "body": bodyCache, "lastContentSize": lastContentSize};
 
         } else {
-            return generateNewLastFileInfo(prefix, batchTime);
+            return generateCompressS3FileInfo(prefix, batchTime);
         }
 
     } else {
-        return generateNewLastFileInfo(prefix, batchTime);
+        return generateCompressS3FileInfo(prefix, batchTime);
     }
 }
 
