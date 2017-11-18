@@ -148,8 +148,9 @@ async function etlExecute(parseline, prefix, times) {
 
                 let newBody = buildBody(items);
 
-                var needClearOldBodyFile = lastContentSize >= maxFileSize
-                await prepareGenerateBodyFile(needClearOldBodyFile)
+                if (lastContentSize >= maxFileSize) {
+                    await prepareGenerateBodyFile()
+                }
 
                 //将新数据写入本地
                 var sourceFilePath = sourceDir + 'baseData'
@@ -219,13 +220,11 @@ async function pushBodyCacheFileToS3(bodyPath) {
     console.log("----------------------------------------------------------")
 }
 
-async function prepareGenerateBodyFile(needClearOldBodyFile) {
+async function prepareGenerateBodyFile() {
 
     let sourceExists = fs.existsSync(sourceDir)
     if (sourceExists) {
-        if (needClearOldBodyFile) {
-            await deleteOldDataFrom(sourceDir)
-        }
+        await deleteOldDataFrom(sourceDir)
     } else {
         fs.mkdirSync(sourceDir);
         console.log('Created dir =>', sourceDir)
