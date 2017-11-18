@@ -138,11 +138,11 @@ async function etlExecute(parseline, prefix, times) {
                 needCreateNewS3Path = false;
             }
 
-            console.log('Get current time dir objects And ETL : ', params_getObject);
+            console.log('Beginning ETL file info => ', params_getObject);
             let traceData = await s3.getObject(params_getObject).promise();
 
             let items = etl(traceData, time, parseline);
-            console.log('Fetch etl item count', items.length);
+            console.log('Generated ETL item count', items.length);
 
             if (items && items.length > 0) {
 
@@ -166,7 +166,7 @@ async function etlExecute(parseline, prefix, times) {
 
                     console.log('Body file length is fat');
                     console.log('Begin make zip and update...')
-                    console.log("---------------------")
+                    console.log("----------------------------------------------------------")
 
                     await pushBodyCacheFileToS3(bodyPath)
 
@@ -210,9 +210,13 @@ async function pushBodyCacheFileToS3(bodyPath) {
         Body: resultGzipFile,
     };
 
+    console.log("----------------------------------------------------------")
     console.log('Beginning push etl gz file to s3...')
+    console.log("----------------------------------------------------------")
     let rs = await s3.putObject(params_putObject).promise();
-    console.log(`ETL saved to S3 filename ${bodyPath}, rs: `, rs);
+    console.log("----------------------------------------------------------")
+    console.log(`ETL push to S3 success. filename ${bodyPath}, rs: `, rs);
+    console.log("----------------------------------------------------------")
 }
 
 async function prepareGenerateBodyFile(needClearOldBodyFile) {
