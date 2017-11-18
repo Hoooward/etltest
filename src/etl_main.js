@@ -148,9 +148,9 @@ async function etlExecute(parseline, prefix, times) {
 
                 let newBody = buildBody(items);
 
-                if (lastContentSize >= maxFileSize) {
-                    await prepareGenerateBodyFile()
-                }
+                await prepareGenerateBodyFile(needCreateNewS3Path)
+
+                console.log("New body write success. new file size => ", lastContentSize);
 
                 //将新数据写入本地
                 var sourceFilePath = sourceDir + 'baseData'
@@ -161,8 +161,7 @@ async function etlExecute(parseline, prefix, times) {
                 }
 
                 lastContentSize += Buffer.from(newBody).length;
-                console.log("New body write success. new file size => ", lastContentSize);
-
+                
                 if (lastContentSize >= maxFileSize) {
 
                     console.log('Body file length is fat');
@@ -220,11 +219,13 @@ async function pushBodyCacheFileToS3(bodyPath) {
     console.log("----------------------------------------------------------")
 }
 
-async function prepareGenerateBodyFile() {
+async function prepareGenerateBodyFile(needClearOldBodyFile) {
 
     let sourceExists = fs.existsSync(sourceDir)
     if (sourceExists) {
-        await deleteOldDataFrom(sourceDir)
+        if (needClearOldBodyFile) {
+            await deleteOldDataFrom(sourceDir)
+        }
     } else {
         fs.mkdirSync(sourceDir);
         console.log('Created dir =>', sourceDir)
