@@ -19,8 +19,9 @@ program
   .version('0.0.1')
   .option('-t, --time [type]', 'ETL times eg. 20170427 or 2017042721 or 201704272120 ', time)
   .option('-l, --logtype [type]', 'Log Types eg. request or response or impression or click or event')
+  .option('-b, --bunch [type], Perform strategy. true is on five day , false is one pick', false)
   .parse(process.argv);
 
-console.log(`start logType: ${program.logtype}, time: ${program.time}`);
-const etlExecutor = new EtlExecutor(program.time,program.logtype);
+console.log(`start logType: ${program.logtype}, time: ${program.time}, fiveDays: ${program.bunch}`);
+const etlExecutor = new EtlExecutor(program.time,program.logtype,program.bunch);
 etlExecutor.start();
