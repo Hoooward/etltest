@@ -8,4 +8,4 @@ WORKDIR /home/etl
 ADD . /home/etl
 RUN npm install
 RUN node -v
-CMD node /home/etl/main.js -l $LOGTYPE
+CMD node /home/etl/main.js -l $LOGTYPE -t $TIME
