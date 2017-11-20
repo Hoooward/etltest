@@ -57,6 +57,7 @@ var etlFn = parseline => (data, batchTime) => {
 var buildEtlPath = function (prefix, time) {
     var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
     var path = beijingTime.format('YYYYMMDD');
+    path= "dt=" + path;
     return `etl_${prefix}_gzip/${path}/`
 }
 
@@ -107,7 +108,7 @@ async function etlExecute(parseline, prefix, times) {
     var lastContentSize = 0;
     var bodyPath = "";
 
-    var needCreateNewS3Path = true
+    var needCreateNewS3Path = true;
 
     for (var time of times) {
 
@@ -163,7 +164,6 @@ async function etlExecute(parseline, prefix, times) {
             if (items && items.length > 0) {
 
                 let newBody = buildBody(items);
-
 
                 //将新数据写入本地
                 var sourceFilePath = sourceDir + 'baseData'
@@ -415,6 +415,7 @@ class EtlExecutor {
             console.log("event over!")
 
         } else {
+
             let parseline = etls[this.logtype].parseline;
             let prefix = etls[this.logtype].prefix;
 
