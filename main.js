@@ -17,7 +17,7 @@ console.log(time);
 
 program
   .version('0.0.1')
-  .option('-t, --time [type]', 'ETL times eg. 20170427 or 2017042721 or 201704272120 ')
+  .option('-t, --time [type]', 'ETL times eg. 20170427 or 2017042721 or 201704272120 ', time)
   .option('-l, --logtype [type]', 'Log Types eg. request or response or impression or click or event')
   .parse(process.argv);
 
