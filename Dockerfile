@@ -1,6 +1,7 @@
 FROM node:7.9.0-alpine
 MAINTAINER libo@yodamob.com  
 ENV LOGTYPE request
+#ENV BUNCH bunch
 #ENV TIME time
 #EXPOSE 3000
 RUN mkdir -p /home/etl
