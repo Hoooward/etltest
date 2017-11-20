@@ -57,7 +57,7 @@ var etlFn = parseline => (data, batchTime) => {
 var buildEtlPath = function (prefix, time) {
     var beijingTime = moment.tz(time, 'Asia/Shanghai').tz('Asia/Shanghai');
     var path = beijingTime.format('YYYYMMDD');
-    return `etl_test${prefix}/${path}/`
+    return `etl_${prefix}_gzip/${path}/`
 }
 
 var generateCompressS3FileInfo = function (prefix, batchTime) {
