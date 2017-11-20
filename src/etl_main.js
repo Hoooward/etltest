@@ -427,6 +427,7 @@ class EtlExecutor {
 
             if (this.bunch) {
 
+                console.log('Begin five days etl');
                 for (var i = 0; i < 5; i++) {
                     let time = moment.tz(this.time, 'YYYYMMDD', 'Asia/Shanghai');
                     let newTime = time.add(i, 'days').format('YYYYMMDD');
@@ -438,6 +439,7 @@ class EtlExecutor {
 
             } else {
 
+                console.log('Begin one piece etl');
                 await etlExecute(parseline, prefix, times);
             }
 
