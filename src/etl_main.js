@@ -422,7 +422,30 @@ class EtlExecutor {
                 throw new Error(`something wrong with param, pls check!\ntime:${this.time}\n$logtype:${this.logtype}\n$etlInstance:${etls[this.logtype]}`);
             }
 
-            await etlExecute(parseline, prefix, times);
+            for (var i = 0; i<5; i++) {
+                let time = moment.tz(this.time, 'YYYYMMDD', 'Asia/Shanghai');
+                let newTime = time.add(i, 'days').format('YYYYMMDD');
+                console.log(newTime);
+                let times = buildTimes(newTime);
+
+                await etlExecute(parseline, prefix, times);
+            }
+
+            // let day1101 = buildTimes("20171101");
+            // await etlExecute(parseline, prefix, day1101);
+            //
+            // let day1102 = buildTimes("20171102");
+            // await etlExecute(parseline, prefix, day1102);
+            //
+            // let day1103 = buildTimes("20171103");
+            // await etlExecute(parseline, prefix, day1103);
+            //
+            // let day1104 = buildTimes("20171104");
+            // await etlExecute(parseline, prefix, day1103);
+            //
+            // let day1105 = buildTimes("20171105");
+            // await etlExecute(parseline, prefix, day1103);
+
             // for (var time of times) {
                 // await etlBatchExecute(parseline, prefix)(time);
             // }
