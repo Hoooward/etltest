@@ -24,6 +24,13 @@ program
   .option('-b, --bunch [bool], Perform strategy. true is on five day , false is one pick', bunch)
   .parse(process.argv);
 
+
+
+
+
+
 console.log(`start logType: ${program.logtype}, time: ${program.time}, fiveDays: ${program.bunch}`);
 const etlExecutor = new EtlExecutor(program.time,program.logtype,program.bunch);
 etlExecutor.start();
+
+
