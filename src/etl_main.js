@@ -14,12 +14,10 @@ const etls = {
 
 const bucket = 'com.yodamob.adserver.track';
 
-
 const maxFileSize = 500 * 1024 * 1024;
 var bodyCache = "";
 const sourceDir = './sources/';
 const gzipDir = './gzip/';
-
 
 var etlFn = parseline => (data, batchTime) => {
 
@@ -166,7 +164,7 @@ async function etlExecute(parseline, prefix, times) {
                 let newBody = buildBody(items);
 
                 //将新数据写入本地
-                var sourceFilePath = sourceDir + 'baseData'
+                var sourceFilePath = sourceDir + 'baseData';
                 let writeError = fs.appendFileSync(sourceFilePath, newBody);
 
                 if (writeError) {
@@ -179,10 +177,10 @@ async function etlExecute(parseline, prefix, times) {
                 if (lastContentSize >= maxFileSize) {
 
                     console.log('Body file length is fat');
-                    console.log('Begin make zip and update...')
-                    console.log("----------------------------------------------------------")
+                    console.log('Begin make zip and update...');
+                    console.log("----------------------------------------------------------");
 
-                    await pushBodyCacheFileToS3(bodyPath)
+                    await pushBodyCacheFileToS3(bodyPath);
 
                     needCreateNewS3Path = true;
                 }
@@ -227,12 +225,13 @@ async function pushBodyCacheFileToS3(bodyPath) {
     console.log("----------------------------------------------------------")
     let rs = await s3.putObject(params_putObject).promise();
 
-    await prepareGenerateBodyFile();
-    await prepareMakeCompress();
 
     console.log("----------------------------------------------------------")
     console.log(`ETL push to S3 success. filename ${bodyPath}, rs: `, rs);
     console.log("----------------------------------------------------------")
+
+    await prepareGenerateBodyFile();
+    await prepareMakeCompress();
 }
 
 async function prepareGenerateBodyFile() {
