@@ -146,8 +146,8 @@ async function etlExecute(parseline, prefix, times) {
                 lastContentSize = newFileInfo.lastContentSize;
                 bodyPath = newFileInfo.bodyPath;
 
-                // await prepareGenerateBodyFile();
-                // await prepareMakeCompress();
+                await prepareGenerateBodyFile();
+                await prepareMakeCompress();
 
                 console.log('Create new push path => ', bodyPath);
                 needCreateNewS3Path = false;

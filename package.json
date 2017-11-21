@@ -9,7 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "aws-sdk": "^2.149.0",
+    "aws-sdk": "^2.154.0",
     "commander": "^2.11.0",
     "fs": "0.0.1-security",
     "moment-timezone": "^0.5.14",
