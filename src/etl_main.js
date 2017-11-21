@@ -227,6 +227,9 @@ async function pushBodyCacheFileToS3(bodyPath) {
     console.log("----------------------------------------------------------")
     let rs = await s3.putObject(params_putObject).promise();
 
+    await prepareGenerateBodyFile();
+    await prepareMakeCompress();
+
     console.log("----------------------------------------------------------")
     console.log(`ETL push to S3 success. filename ${bodyPath}, rs: `, rs);
     console.log("----------------------------------------------------------")
@@ -432,9 +435,9 @@ class EtlExecutor {
                     let time = moment.tz(this.time, 'YYYYMMDD', 'Asia/Shanghai');
                     let newTime = time.add(i, 'days').format('YYYYMMDD');
                     console.log(newTime);
-                    let times = buildTimes(newTime);
+                    let newTimes = buildTimes(newTime);
 
-                    await etlExecute(parseline, prefix, times);
+                    await etlExecute(parseline, prefix, newTimes);
                 }
 
             } else {
