@@ -148,8 +148,8 @@ async function etlExecute(parseline, prefix, times) {
                 lastContentSize = newFileInfo.lastContentSize;
                 bodyPath = newFileInfo.bodyPath;
 
-                await prepareGenerateBodyFile()
-                await prepareMakeCompress();
+                // await prepareGenerateBodyFile();
+                // await prepareMakeCompress();
 
                 console.log('Create new push path => ', bodyPath);
                 needCreateNewS3Path = false;
@@ -170,7 +170,7 @@ async function etlExecute(parseline, prefix, times) {
                 let writeError = fs.appendFileSync(sourceFilePath, newBody);
 
                 if (writeError) {
-                    throw  writeError;
+                    console("write new body failed: ", writeError);
                 }
 
                 lastContentSize += Buffer.from(newBody).length;
